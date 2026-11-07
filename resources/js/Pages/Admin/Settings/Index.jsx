@@ -87,7 +87,7 @@ function Settings({ adminUsername }) {
                         <label className="block text-sm">
                             Favicon
                             <input type="file" accept=".ico,image/*" className="inp" onChange={(event) => settingsForm.setData('favicon', event.target.files[0])} />
-                            {settings.favicon && <img src={`/storage/${settings.favicon}`} alt="Favicon" className="h-8 mt-2 object-contain" />}
+                            {settings.favicon ? <img src={`/storage/${settings.favicon}`} alt="Favicon" className="h-8 mt-2 object-contain" /> : <div className="text-xs text-gray-400 mt-1">Uses the Gen Aura brand mark when empty.</div>}
                         </label>
                     </div>
                 </div>
