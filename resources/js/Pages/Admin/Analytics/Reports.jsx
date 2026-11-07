@@ -3,6 +3,8 @@ import AdminLayout from '../../../Layouts/AdminLayout';
 import DateRangeFilter from '../../../Components/DateRangeFilter';
 
 function Reports({ groups, range }) {
+    const query = `range=${encodeURIComponent(range.preset)}&from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`;
+
     return (
         <>
             <Head title="Analytics reports" />
@@ -11,7 +13,7 @@ function Reports({ groups, range }) {
                 <div>
                     <h1 className="font-serif text-3xl font-bold">Reports</h1>
                     <p className="text-sm text-gray-500 mt-1">
-                        Reports respect the selected date range. PDF/Excel export is the next slice.
+                        Every export uses the selected date range and the same recorded data shown on screen.
                     </p>
                 </div>
                 <DateRangeFilter range={range} url="/admin/analytics/reports" />
@@ -22,9 +24,26 @@ function Reports({ groups, range }) {
                     <div key={group.group} className="bg-white rounded-2xl p-4">
                         <h2 className="font-semibold mb-3">{group.group} reports</h2>
                         {group.items.map((item) => (
-                            <div key={item} className="flex justify-between gap-2 border-t border-gray-100 py-2 text-sm first:border-t-0 first:pt-0">
-                                <span>{item}</span>
-                                <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 text-xs font-bold">Export soon</span>
+                            <div key={item.key} className="flex justify-between gap-2 border-t border-gray-100 py-2 text-sm first:border-t-0 first:pt-0">
+                                <span>{item.label}</span>
+                                <span className="flex gap-2">
+                                    <a
+                                        href={`/admin/analytics/reports/export/${item.key}/pdf?${query}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-xs font-bold"
+                                    >
+                                        PDF
+                                    </a>
+                                    <a
+                                        href={`/admin/analytics/reports/export/${item.key}/xlsx?${query}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-xs font-bold"
+                                    >
+                                        Excel
+                                    </a>
+                                </span>
                             </div>
                         ))}
                     </div>
@@ -32,7 +51,7 @@ function Reports({ groups, range }) {
             </div>
 
             <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 text-xs mt-4">
-                All numbers come from recorded analytics and order data. Exports will reuse the same date filter so the file matches the screen.
+                Exports are generated from actual analytics and order data. The file matches the selected date filter.
             </div>
         </>
     );

@@ -65,6 +65,7 @@ Route::middleware([SetLocale::class])->group(function () {
                 Route::get('checkout', [AnalyticsController::class, 'checkout'])->name('checkout');
                 Route::get('funnel', [AnalyticsController::class, 'funnel'])->name('funnel');
                 Route::get('reports', [AnalyticsController::class, 'reports'])->name('reports');
+                Route::get('reports/export/{report}/{format}', [AnalyticsController::class, 'exportReport'])->name('reports.export')->middleware('throttle:30,1');
             });
             Route::get('reviews', [MiscController::class, 'reviews'])->name('reviews');
             Route::patch('reviews/{review}/status', [MiscController::class, 'reviewStatus'])->name('reviews.status');

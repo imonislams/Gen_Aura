@@ -3,14 +3,17 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Setting;
 use App\Services\Analytics\MetricsService;
+use App\Services\Analytics\ReportService;
 use App\Support\Analytics\DateRange;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class AnalyticsController extends Controller
 {
-    public function __construct(private MetricsService $metrics)
+    public function __construct(private MetricsService $metrics, private ReportService $reports)
     {
     }
 
@@ -118,8 +121,44 @@ class AnalyticsController extends Controller
     public function reports(Request $request)
     {
         return Inertia::render('Admin/Analytics/Reports', [
-            'groups' => $this->metrics->reports(),
+            'groups' => $this->reports->groups(),
             'range' => DateRange::fromRequest($request)->toArray(),
         ]);
+    }
+
+    public function exportReport(Request $request, string $report, string $format)
+    {
+        if (!in_array($format, ['pdf', 'xlsx'], true)) {
+            abort(404);
+        }
+
+        $range = DateRange::fromRequest($request);
+        $data = $this->reports->build($report, $range);
+        $filename = 'gen-aura-' . $report . '-' . $range->from->format('Ymd') . '-' . $range->to->format('Ymd') . '.' . $format;
+
+        if ($format === 'xlsx') {
+            return response()->streamDownload(function () use ($data) {
+                $writer = new \OpenSpout\Writer\XLSX\Writer();
+                $writer->openToFile('php://output');
+                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues($data['headings']));
+
+                foreach ($data['rows'] as $row) {
+                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(array_map(
+                        fn ($value) => $value === null ? '' : (is_scalar($value) ? $value : (string) $value),
+                        $row
+                    )));
+                }
+
+                $writer->close();
+            }, $filename, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']);
+        }
+
+        $pdf = Pdf::loadView('exports.analytics-report', [
+            'data' => $data,
+            'range' => $range->toArray(),
+            'settings' => Setting::all_(),
+        ]);
+
+        return $pdf->download($filename);
     }
 }
