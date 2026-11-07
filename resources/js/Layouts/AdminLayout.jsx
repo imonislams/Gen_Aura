@@ -6,6 +6,7 @@ const items = [
     { href: '/admin/products', label: 'Products', icon: '▤', match: /^\/admin\/products/ },
     { href: '/admin/categories', label: 'Categories', icon: '◫', match: /^\/admin\/categories/ },
     { href: '/admin/orders', label: 'Orders', icon: '▥', match: /^\/admin\/orders/ },
+    { href: '/admin/customers', label: 'Customers', icon: '☺', match: /^\/admin\/customers/ },
     { href: '/admin/reviews', label: 'Reviews', icon: '★', match: /^\/admin\/reviews/ },
     { href: '/admin/settings', label: 'Settings', icon: '⚙', match: /^\/admin\/settings/ },
 ];

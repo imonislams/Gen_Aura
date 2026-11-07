@@ -1,11 +1,13 @@
 <?php
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MiscController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\ShopController;
 use App\Http\Middleware\AdminAuth;
 use App\Http\Middleware\SetLocale;
@@ -23,7 +25,12 @@ Route::middleware([SetLocale::class])->group(function () {
     Route::get('/cart', [CartController::class, 'index'])->name('cart');
     Route::post('/cart/add/{product}', [CartController::class, 'add'])->name('cart.add');
     Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
+    Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
     Route::post('/cart/checkout', [CartController::class, 'checkout'])->middleware('throttle:10,1')->name('cart.checkout');
+
+    Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.show');
+    Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('throttle:10,1')->name('checkout.store');
+    Route::get('/order/{order}/success', [CheckoutController::class, 'success'])->middleware('signed')->name('order.success');
 
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('login', [AuthController::class, 'show'])->name('login');
@@ -38,8 +45,12 @@ Route::middleware([SetLocale::class])->group(function () {
             Route::put('categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
             Route::delete('categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
             Route::get('orders', [OrderController::class, 'index'])->name('orders');
+            Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+            Route::get('orders/{order}/invoice', [OrderController::class, 'invoice'])->name('orders.invoice');
             Route::patch('orders/{order}', [OrderController::class, 'update'])->name('orders.update');
             Route::delete('orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
+            Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
+            Route::get('customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
             Route::get('reviews', [MiscController::class, 'reviews'])->name('reviews');
             Route::patch('reviews/{review}/status', [MiscController::class, 'reviewStatus'])->name('reviews.status');
             Route::delete('reviews/{review}', [MiscController::class, 'reviewDestroy'])->name('reviews.destroy');

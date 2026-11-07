@@ -32,6 +32,11 @@ class Order extends Model
         return $this->belongsTo(Customer::class);
     }
 
+    public function statusHistory(): HasMany
+    {
+        return $this->hasMany(OrderStatusHistory::class)->orderBy('created_at');
+    }
+
     protected static function booted(): void
     {
         static::created(function (Order $order) {
@@ -47,13 +52,31 @@ class Order extends Model
             );
 
             $order->forceFill(['customer_id' => $customer->id])->saveQuietly();
+            $customer->update(['name' => $order->name]);
+            $customer->recalculate();
 
-            $customer->update([
-                'name' => $order->name,
-                'total_orders' => $customer->orders()->where('status', '!=', 'Cancelled')->count(),
-                'total_purchase' => $customer->orders()->where('status', '!=', 'Cancelled')->sum('total'),
-                'last_order_at' => $order->created_at,
+            OrderStatusHistory::create([
+                'order_id' => $order->id,
+                'status' => $order->status,
+                'note' => 'Order placed',
+                'created_at' => $order->created_at ?? now(),
             ]);
+        });
+
+        static::updated(function (Order $order) {
+            if (!$order->wasChanged('status')) {
+                return;
+            }
+
+            OrderStatusHistory::create([
+                'order_id' => $order->id,
+                'status' => $order->status,
+                'note' => 'Status changed from ' . $order->getOriginal('status') . ' to ' . $order->status,
+                'admin_id' => request()->hasSession() ? request()->session()->get('admin_id') : null,
+                'created_at' => now(),
+            ]);
+
+            $order->customer?->recalculate();
         });
     }
 }

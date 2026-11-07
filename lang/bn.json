@@ -52,5 +52,13 @@
  "Price: High to Low": "দাম: বেশি থেকে কম",
  "In stock only": "শুধু স্টকে আছে",
  "Apply filters": "ফিল্টার করুন",
- "Please enter a valid phone number": "সঠিক ফোন নম্বর দিন"
+ "Please enter a valid phone number": "সঠিক ফোন নম্বর দিন",
+ "Proceed to checkout": "চেকআউটে যান",
+ "Order summary": "অর্ডার সারাংশ",
+ "Subtotal": "সাবটোটাল",
+ "Continue shopping": "কেনাকাটা চালিয়ে যান",
+ "Remove": "সরান",
+ "Cash on Delivery · totals re-verified on the server": "ক্যাশ অন ডেলিভারি · সার্ভারে মোট পুনরায় যাচাই হয়",
+ "This product is not available": "এই পণ্যটি পাওয়া যাচ্ছে না",
+ "This checkout session expired. Please review your bag and try again.": "চেকআউট সেশন শেষ হয়েছে। ব্যাগ দেখে আবার চেষ্টা করুন।"
 }

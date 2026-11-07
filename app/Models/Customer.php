@@ -20,6 +20,17 @@ class Customer extends Model
         return $this->hasMany(Order::class);
     }
 
+    public function recalculate(): void
+    {
+        $active = $this->orders()->where('status', '!=', 'Cancelled');
+
+        $this->update([
+            'total_orders' => (clone $active)->count(),
+            'total_purchase' => (clone $active)->sum('total'),
+            'last_order_at' => $this->orders()->max('created_at'),
+        ]);
+    }
+
     public static function normalizePhone(?string $phone): string
     {
         $digits = preg_replace('/\D/', '', (string) $phone);

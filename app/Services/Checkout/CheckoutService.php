@@ -1,0 +1,130 @@
+<?php
+
+namespace App\Services\Checkout;
+
+use App\Models\Order;
+use App\Models\Product;
+use App\Models\Setting;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use RuntimeException;
+
+class CheckoutService
+{
+    public function lines(): array
+    {
+        $cart = session('cart', []);
+        $products = Product::active()->whereIn('id', collect($cart)->pluck('id'))->get()->keyBy('id');
+
+        $lines = [];
+        foreach ($cart as $key => $item) {
+            if ($product = $products->get($item['id'])) {
+                $lines[] = [
+                    'key' => $key,
+                    'p' => $product,
+                    'size' => $item['size'],
+                    'qty' => (int) $item['qty'],
+                ];
+            }
+        }
+
+        return $lines;
+    }
+
+    public function totals(array $lines): array
+    {
+        $subtotal = array_sum(array_map(fn ($line) => $line['p']->price * $line['qty'], $lines));
+        $ship = $lines ? (int) Setting::all_()['ship'] : 0;
+
+        return ['subtotal' => $subtotal, 'ship' => $ship, 'total' => $subtotal + $ship];
+    }
+
+    public function placeOrder(array $customer, string $idempotencyKey): Order
+    {
+        $existing = Order::where('idempotency_key', $idempotencyKey)->first();
+        if ($existing) {
+            return $existing->load('items');
+        }
+
+        $lines = $this->lines();
+        if (!$lines) {
+            throw new RuntimeException(__('Your bag is empty.'));
+        }
+
+        $totals = $this->totals($lines);
+
+        try {
+            $order = DB::transaction(function () use ($lines, $customer, $totals, $idempotencyKey) {
+                $items = [];
+                $subtotal = 0;
+
+                foreach ($lines as $line) {
+                    $product = Product::lockForUpdate()->find($line['p']->id);
+                    if (!$product || $product->status !== 'active' || $product->stock < $line['qty']) {
+                        throw new RuntimeException(($product->name ?? 'Product') . ': ' . __('Out of stock'));
+                    }
+
+                    $product->decrement('stock', $line['qty']);
+
+                    $items[] = [
+                        'product_id' => $product->id,
+                        'name' => $product->name,
+                        'size' => $line['size'],
+                        'qty' => $line['qty'],
+                        'price' => $product->price,
+                    ];
+
+                    $subtotal += $product->price * $line['qty'];
+                }
+
+                $order = Order::create($customer + [
+                    'subtotal' => $subtotal,
+                    'ship' => $totals['ship'],
+                    'total' => $subtotal + $totals['ship'],
+                    'status' => 'Pending',
+                    'payment_method' => 'COD',
+                    'idempotency_key' => $idempotencyKey,
+                ]);
+
+                $order->items()->createMany($items);
+
+                return $order->load('items');
+            });
+        } catch (\Illuminate\Database\QueryException $e) {
+            $existing = Order::where('idempotency_key', $idempotencyKey)->first();
+            if ($existing) {
+                return $existing->load('items');
+            }
+
+            throw $e;
+        }
+
+        $this->mail($order);
+
+        return $order;
+    }
+
+    public function mail(Order $order): void
+    {
+        $to = config('shop.order_email') ?: config('mail.from.address');
+        if (!$to) {
+            return;
+        }
+
+        try {
+            $rows = '';
+            foreach ($order->items as $item) {
+                $rows .= '<tr><td>' . e($item->name) . ($item->size ? ' (' . e($item->size) . ')' : '') . '</td><td>x' . $item->qty . '</td><td>৳' . ($item->price * $item->qty) . '</td></tr>';
+            }
+
+            $html = '<h2>New order #' . $order->order_number . '</h2>'
+                . '<p><b>' . e($order->name) . '</b><br>Phone: ' . e($order->phone) . '<br>Address: ' . e($order->address) . '</p>'
+                . '<table cellpadding="6">' . $rows . '</table>'
+                . '<p>Delivery: ৳' . $order->ship . '<br><b>Total: ৳' . $order->total . '</b> (Cash on Delivery)</p>';
+
+            Mail::html($html, fn ($message) => $message->to($to)->subject('New order ৳' . $order->total . ' from ' . $order->name));
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+}
