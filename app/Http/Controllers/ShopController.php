@@ -3,13 +3,47 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\Review;
+use App\Models\Setting;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class ShopController extends Controller
 {
     public function home()
     {
-        return view('home', ['products' => Product::latest()->take(8)->get(), 'reviews' => Review::latest()->take(3)->get()]);
+        $products = Product::latest()->take(8)->get();
+        $reviews = Review::latest()->take(3)->get();
+        $settings = Setting::all_();
+        $heroProduct = $products->first();
+        $heroImage = !empty($settings['hero_image'])
+            ? asset('storage/' . $settings['hero_image'])
+            : $heroProduct?->image_url;
+
+        return Inertia::render('Store/Home', [
+            'products' => $products->map(fn (Product $p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'cat' => $p->cat,
+                'description' => $p->description,
+                'price' => $p->price,
+                'old_price' => $p->old_price,
+                'stock' => $p->stock,
+                'off' => $p->off,
+                'image_url' => $p->image_url,
+                'url' => route('product', $p),
+            ])->values(),
+            'reviews' => $reviews->map(fn (Review $r) => [
+                'id' => $r->id,
+                'name' => $r->name,
+                'text' => $r->text,
+                'stars' => $r->stars,
+            ])->values(),
+            'heroImage' => $heroImage,
+            'heroProduct' => $heroProduct ? [
+                'name' => $heroProduct->name,
+                'price' => $heroProduct->price,
+            ] : null,
+        ]);
     }
 
     public function shop(Request $r)
@@ -45,7 +79,7 @@ class ShopController extends Controller
         return back()->with('ok', __('Thank you! Your review is live.'));
     }
 
-    public function contact() { return view('contact'); }
+    public function contact() { return Inertia::render('Store/Contact'); }
 
     public function lang(string $l)
     {

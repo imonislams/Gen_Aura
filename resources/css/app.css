@@ -3,9 +3,68 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';
+@source '../**/*.jsx';
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --color-pur: #8E3FD0;
+    --color-mag: #B03A9A;
+    --color-org: #E3A04A;
+    --color-gold: #D8A23A;
+    --color-bg: #F8F6F3;
+    --font-serif: 'Cormorant Garamond', Georgia, serif;
+    --font-sans: 'Hind Siliguri', ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+    body {
+        background: #F8F6F3;
+        color: #2b2233;
+    }
+
+    .ar {
+        font-family: 'Noto Naskh Arabic', serif;
+    }
+}
+
+@layer components {
+    .grad {
+        background: linear-gradient(90deg, #8E3FD0, #B03A9A 55%, #E3A04A);
+    }
+
+    .gtext {
+        background: linear-gradient(90deg, #8E3FD0, #B03A9A 55%, #E3A04A);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+
+    .btn {
+        background: linear-gradient(90deg, #8E3FD0, #B03A9A 55%, #E3A04A);
+        color: #fff;
+        font-weight: 600;
+        border-radius: 9999px;
+        padding: 0.625rem 1.25rem;
+        display: inline-block;
+        text-align: center;
+        cursor: pointer;
+        border: 0;
+    }
+
+    .btn:hover {
+        opacity: 0.9;
+    }
+
+    .inp {
+        width: 100%;
+        margin-top: 0.25rem;
+        border: 1px solid #e9d5ff;
+        border-radius: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        background: #fff;
+    }
+
+    .inp:focus {
+        outline: 2px solid rgba(142, 63, 208, 0.4);
+    }
 }
