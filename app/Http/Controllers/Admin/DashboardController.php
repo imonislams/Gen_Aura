@@ -7,6 +7,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
@@ -37,6 +38,14 @@ class DashboardController extends Controller
             'Orders (range)' => $sum('n'), 'Revenue (range)' => '৳' . number_format($sum('r')), 'Units sold (range)' => $sum('u'),
             'Pending' => Order::where('status', 'Pending')->count(), 'Low / out of stock' => $low->count(), 'Products' => Product::count(),
         ];
-        return view('admin.dashboard', ['daily' => array_values($daily), 'monthly' => array_values($monthly), 'top' => $top, 'low' => $low, 'stats' => $stats, 'from' => $from->toDateString(), 'to' => $to->toDateString()]);
+        return Inertia::render('Admin/Dashboard', [
+            'daily' => array_values($daily),
+            'monthly' => array_values($monthly),
+            'top' => $top->map(fn ($item) => ['name' => $item->name, 'q' => (int) $item->q])->values(),
+            'low' => $low->map(fn ($product) => ['id' => $product->id, 'name' => $product->name, 'stock' => $product->stock])->values(),
+            'stats' => $stats,
+            'from' => $from->toDateString(),
+            'to' => $to->toDateString(),
+        ]);
     }
 }

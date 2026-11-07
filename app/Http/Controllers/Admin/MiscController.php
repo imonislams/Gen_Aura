@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class MiscController extends Controller
 {
@@ -18,7 +19,19 @@ class MiscController extends Controller
         if ($r->filled('status')) $q->where('status', $r->status);
         if ($r->filled('q')) $q->where(fn ($x) => $x->where('name', 'like', '%' . $r->q . '%')->orWhere('text', 'like', '%' . $r->q . '%'));
 
-        return view('admin.reviews', ['reviews' => $q->paginate(30)->withQueryString()]);
+        return Inertia::render('Admin/Reviews/Index', [
+            'reviews' => $q->with('product')->latest()->paginate(30)->withQueryString()->through(fn (Review $review) => [
+                'id' => $review->id,
+                'name' => $review->name,
+                'text' => $review->text,
+                'stars' => $review->stars,
+                'status' => $review->status,
+                'product' => $review->product?->name,
+                'created_at' => $review->created_at?->toIso8601String(),
+            ]),
+            'filters' => $r->only(['status', 'q']),
+            'statuses' => ['pending', 'approved', 'rejected'],
+        ]);
     }
 
     public function reviewStatus(Request $r, Review $review)
@@ -35,7 +48,12 @@ class MiscController extends Controller
         return back()->with('ok', 'Review deleted');
     }
 
-    public function settings() { return view('admin.settings'); }
+    public function settings()
+    {
+        return Inertia::render('Admin/Settings/Index', [
+            'adminUsername' => Admin::find(session('admin_id'))?->username,
+        ]);
+    }
 
     public function settingsSave(Request $r)
     {

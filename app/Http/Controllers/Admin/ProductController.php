@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class ProductController extends Controller
 {
@@ -29,26 +30,62 @@ class ProductController extends Controller
             $q->onlyTrashed();
         }
 
-        return view('admin.products.index', [
-            'products' => $q->latest()->paginate(30)->withQueryString(),
-            'categories' => Category::orderBy('name')->get(),
+        return Inertia::render('Admin/Products/Index', [
+            'products' => $q->latest()->paginate(30)->withQueryString()->through(fn (Product $p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'slug' => $p->slug,
+                'sku' => $p->sku,
+                'category' => $p->category?->name ?? ($p->cat ?: 'Uncategorised'),
+                'image_url' => $p->image_url,
+                'price' => $p->price,
+                'stock' => $p->stock,
+                'status' => $p->status,
+                'featured' => $p->featured,
+                'trashed' => $p->trashed(),
+                'deleted_at' => $p->deleted_at?->toIso8601String(),
+            ]),
+            'filters' => $r->only(['q', 'status', 'low', 'trashed']),
         ]);
     }
 
     public function create()
     {
-        return view('admin.products.form', [
-            'p' => new Product(['stock' => 10, 'status' => 'active']),
-            'categories' => Category::orderBy('name')->get(),
+        return Inertia::render('Admin/Products/Form', [
+            'product' => null,
+            'categories' => Category::orderBy('name')->get(['id', 'name']),
         ]);
     }
 
     public function edit(Product $product)
     {
-        return view('admin.products.form', [
-            'p' => $product,
-            'categories' => Category::orderBy('name')->get(),
+        return Inertia::render('Admin/Products/Form', [
+            'product' => $this->formProduct($product),
+            'categories' => Category::orderBy('name')->get(['id', 'name']),
         ]);
+    }
+
+    private function formProduct(Product $product): array
+    {
+        return [
+            'id' => $product->id,
+            'name' => $product->name,
+            'slug' => $product->slug,
+            'sku' => $product->sku,
+            'category_id' => $product->category_id,
+            'cat' => $product->cat,
+            'sub' => $product->sub,
+            'sizes' => $product->sizes,
+            'feat' => $product->feat,
+            'description' => $product->description,
+            'price' => $product->price,
+            'old_price' => $product->old_price,
+            'stock' => $product->stock,
+            'status' => $product->status,
+            'featured' => (bool) $product->featured,
+            'image_url' => $product->image_url,
+            'images' => $product->images ?? [],
+        ];
     }
 
     public function store(Request $r)

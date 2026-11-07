@@ -27,7 +27,24 @@ class OrderController extends Controller
                 ->orWhere('order_number', 'like', '%' . $r->q . '%'));
         }
 
-        return view('admin.orders', ['orders' => $q->paginate(30)->withQueryString()]);
+        return Inertia::render('Admin/Orders/Index', [
+            'orders' => $q->with('items')->paginate(30)->withQueryString()->through(fn (Order $order) => [
+                'id' => $order->id,
+                'order_number' => $order->order_number,
+                'name' => $order->name,
+                'phone' => $order->phone,
+                'address' => $order->address,
+                'delivery_area' => $order->delivery_area,
+                'total' => $order->total,
+                'status' => $order->status,
+                'payment_method' => $order->payment_method,
+                'created_at' => $order->created_at?->toIso8601String(),
+                'items_count' => $order->items->count(),
+                'items_summary' => $order->items->map(fn ($item) => $item->name . ($item->size ? ' (' . $item->size . ')' : '') . ' ×' . $item->qty)->implode(', '),
+            ]),
+            'filters' => $r->only(['status', 'q']),
+            'statuses' => Order::STATUS,
+        ]);
     }
 
     public function show(Order $order)
