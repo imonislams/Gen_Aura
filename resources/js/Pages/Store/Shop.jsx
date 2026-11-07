@@ -7,13 +7,14 @@ import Pagination from '../../Components/Pagination';
 function Shop({ products, filters, categories }) {
     const { translations } = usePage().props;
     const t = (value) => translations?.[value] ?? value;
+    const currentFilters = filters && !Array.isArray(filters) ? filters : {};
 
-    const [cat, setCat] = useState(filters?.cat ?? '');
-    const [q, setQ] = useState(filters?.q ?? '');
-    const [min, setMin] = useState(filters?.min ?? '');
-    const [max, setMax] = useState(filters?.max ?? '');
-    const [sort, setSort] = useState(filters?.sort ?? 'new');
-    const [stock, setStock] = useState(!!filters?.stock);
+    const [cat, setCat] = useState(currentFilters.cat ?? '');
+    const [q, setQ] = useState(currentFilters.q ?? '');
+    const [min, setMin] = useState(currentFilters.min ?? '');
+    const [max, setMax] = useState(currentFilters.max ?? '');
+    const [sort, setSort] = useState(typeof currentFilters.sort === 'string' ? currentFilters.sort : 'new');
+    const [stock, setStock] = useState(!!currentFilters.stock);
 
     const apply = (overrides = {}) => {
         router.get('/shop', {

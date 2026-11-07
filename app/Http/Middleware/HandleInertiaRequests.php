@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Admin;
+use App\Models\ContactMessage;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -46,6 +47,7 @@ class HandleInertiaRequests extends Middleware
                     'must_change_password' => (bool) $admin->must_change_password,
                 ] : null,
             ],
+            'messagesUnread' => $admin ? ContactMessage::where('status', 'new')->count() : 0,
         ];
     }
 }

@@ -76,6 +76,9 @@ Route::middleware([SetLocale::class])->group(function () {
             Route::get('reviews', [MiscController::class, 'reviews'])->name('reviews');
             Route::patch('reviews/{review}/status', [MiscController::class, 'reviewStatus'])->name('reviews.status');
             Route::delete('reviews/{review}', [MiscController::class, 'reviewDestroy'])->name('reviews.destroy');
+            Route::get('messages', [MiscController::class, 'messages'])->name('messages');
+            Route::patch('messages/{message}/status', [MiscController::class, 'messageStatus'])->name('messages.status');
+            Route::delete('messages/{message}', [MiscController::class, 'messageDestroy'])->name('messages.destroy');
             Route::get('settings', [MiscController::class, 'settings'])->name('settings');
             Route::post('settings', [MiscController::class, 'settingsSave'])->name('settings.save');
             Route::post('password', [MiscController::class, 'password'])->name('password');

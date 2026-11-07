@@ -9,6 +9,7 @@ const items = [
     { href: '/admin/orders', label: 'Orders', icon: '▥', match: /^\/admin\/orders/ },
     { href: '/admin/customers', label: 'Customers', icon: '☺', match: /^\/admin\/customers/ },
     { href: '/admin/reviews', label: 'Reviews', icon: '★', match: /^\/admin\/reviews/ },
+    { href: '/admin/messages', label: 'Messages', icon: '✉', match: /^\/admin\/messages/ },
     { href: '/admin/settings', label: 'Settings', icon: '⚙', match: /^\/admin\/settings/ },
 ];
 
@@ -26,7 +27,7 @@ const analyticsItems = [
 
 export default function AdminLayout({ children }) {
     const page = usePage();
-    const { settings, flash, errors, auth } = page.props;
+    const { settings, flash, errors, auth, messagesUnread } = page.props;
     const url = page.url || '';
 
     const logout = (event) => {
@@ -59,6 +60,11 @@ export default function AdminLayout({ children }) {
                         >
                             <span className="mr-2">{item.icon}</span>
                             {item.label}
+                            {item.href === '/admin/messages' && messagesUnread > 0 && (
+                                <span className="ml-2 inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold">
+                                    {messagesUnread}
+                                </span>
+                            )}
                         </Link>
                     ))}
                 </nav>
@@ -99,6 +105,9 @@ export default function AdminLayout({ children }) {
                             }`}
                         >
                             {item.label}
+                            {item.href === '/admin/messages' && messagesUnread > 0 && (
+                                <span className="ml-1 text-red-500">({messagesUnread})</span>
+                            )}
                         </Link>
                     ))}
                     <Link
@@ -120,7 +129,7 @@ export default function AdminLayout({ children }) {
                     <Flash ok={flash?.ok} errors={errors} />
                     {auth?.admin?.must_change_password && (
                         <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 mb-4 text-sm">
-                            Please change the default admin password in Settings before continuing.
+                            Please change the default admin password in Settings when you can.
                         </div>
                     )}
                     {children}

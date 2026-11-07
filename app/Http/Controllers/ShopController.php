@@ -76,7 +76,14 @@ class ShopController extends Controller
 
         return Inertia::render('Store/Shop', [
             'products' => $q->paginate(24)->withQueryString()->through(fn (Product $p) => ProductPresenter::card($p)),
-            'filters' => $r->only(['cat', 'q', 'min', 'max', 'sort', 'stock']),
+            'filters' => [
+                'cat' => $r->input('cat'),
+                'q' => $r->input('q'),
+                'min' => $r->input('min'),
+                'max' => $r->input('max'),
+                'sort' => $r->input('sort'),
+                'stock' => $r->input('stock'),
+            ],
             'categories' => Category::active()->orderBy('sort_order')->orderBy('name')->get(['id', 'name', 'slug']),
         ]);
     }

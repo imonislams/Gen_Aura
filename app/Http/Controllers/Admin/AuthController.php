@@ -18,10 +18,6 @@ class AuthController extends Controller
         $r->session()->regenerate();
         session(['admin_id' => $a->id]);
 
-        if ($a->must_change_password) {
-            return redirect()->route('admin.settings')->with('ok', 'Please change the default admin password before continuing.');
-        }
-
         return redirect()->route('admin.dashboard');
     }
 
