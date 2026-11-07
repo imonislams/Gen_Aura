@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Services\Analytics\AnalyticsTracker;
 use App\Services\Checkout\CheckoutService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
@@ -12,13 +13,18 @@ use RuntimeException;
 
 class CheckoutController extends Controller
 {
-    public function show(CheckoutService $checkout)
+    public function show(Request $request, CheckoutService $checkout)
     {
         $lines = $checkout->lines();
         $totals = $checkout->totals($lines);
 
         $token = session('checkout_token') ?: (string) Str::uuid();
         session(['checkout_token' => $token]);
+
+        app(AnalyticsTracker::class)->event($request, 'checkout_started', [
+            'page_type' => 'checkout',
+            'metadata' => ['total' => $totals['total'], 'items' => count($lines)],
+        ]);
 
         return Inertia::render('Store/Checkout', [
             'lines' => array_map(fn ($line) => [
@@ -63,6 +69,8 @@ class CheckoutController extends Controller
         } catch (RuntimeException $e) {
             return back()->withErrors($e->getMessage());
         }
+
+        app(AnalyticsTracker::class)->orderCompleted($request, $order);
 
         session()->forget(['cart', 'checkout_token']);
 

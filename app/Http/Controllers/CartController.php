@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Services\Analytics\AnalyticsTracker;
 use App\Services\Checkout\CheckoutService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
@@ -34,6 +35,12 @@ class CartController extends Controller
         $cart[$key] = ['id' => $product->id, 'size' => $size, 'qty' => min(50, ($cart[$key]['qty'] ?? 0) + 1)];
         session(['cart' => $cart]);
 
+        app(AnalyticsTracker::class)->event($r, 'add_to_cart', [
+            'product_id' => $product->id,
+            'category' => $product->cat,
+            'metadata' => ['size' => $size, 'qty' => $cart[$key]['qty'], 'price' => $product->price],
+        ]);
+
         return $r->input('go') === 'buy' ? redirect()->route('checkout.show') : back()->with('ok', __('Added to bag'));
     }
 
@@ -43,9 +50,15 @@ class CartController extends Controller
         $key = (string) $r->input('key');
 
         if (isset($cart[$key])) {
+            $oldQty = (int) $cart[$key]['qty'];
             $qty = min(50, max(0, (int) $r->input('qty')));
             if ($qty === 0) unset($cart[$key]); else $cart[$key]['qty'] = $qty;
             session(['cart' => $cart]);
+
+            app(AnalyticsTracker::class)->event($r, $qty === 0 ? 'remove_from_cart' : 'cart_qty_update', [
+                'product_id' => $cart[$key]['id'] ?? null,
+                'metadata' => ['size' => $cart[$key]['size'] ?? null, 'old_qty' => $oldQty, 'qty' => $qty],
+            ]);
         }
 
         return back();
@@ -54,8 +67,17 @@ class CartController extends Controller
     public function remove(Request $r)
     {
         $cart = session('cart', []);
-        unset($cart[(string) $r->input('key')]);
+        $key = (string) $r->input('key');
+        $item = $cart[$key] ?? null;
+        unset($cart[$key]);
         session(['cart' => $cart]);
+
+        if ($item) {
+            app(AnalyticsTracker::class)->event($r, 'remove_from_cart', [
+                'product_id' => $item['id'],
+                'metadata' => ['size' => $item['size'], 'qty' => $item['qty']],
+            ]);
+        }
 
         return back();
     }
@@ -74,6 +96,7 @@ class CartController extends Controller
             return back()->withErrors($e->getMessage());
         }
 
+        app(AnalyticsTracker::class)->orderCompleted($r, $order);
         session()->forget('cart');
 
         return redirect(URL::temporarySignedRoute('order.success', now()->addDays(7), ['order' => $order->id]))
