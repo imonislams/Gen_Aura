@@ -1,14 +1,28 @@
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
+import { useState } from 'react';
 
 export default function ProductCard({ product, t = (value) => value }) {
     const out = product.stock <= 0;
+    const [busy, setBusy] = useState(false);
+
+    const add = (go) => {
+        if (out || busy) {
+            return;
+        }
+        setBusy(true);
+        router.post(`/cart/add/${product.id}`, {
+            size: product.sizes?.[0] ?? '',
+            qty: 1,
+            go,
+        }, {
+            preserveScroll: go !== 'buy',
+            onFinish: () => setBusy(false),
+        });
+    };
 
     return (
-        <Link
-            href={product.url}
-            className="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col hover:shadow-md transition"
-        >
-            <div className="relative">
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col hover:shadow-md transition">
+            <Link href={product.url} className="block relative">
                 <img
                     src={product.image_url}
                     alt={product.name}
@@ -31,18 +45,42 @@ export default function ProductCard({ product, t = (value) => value }) {
                         </span>
                     )
                 )}
-            </div>
+            </Link>
+
             <div className="p-4 flex flex-col flex-1">
-                <span className="text-xs text-mag font-semibold">{product.cat}</span>
-                <h3 className="font-semibold">{product.name}</h3>
-                <p className="text-sm text-gray-500 line-clamp-2 flex-1">{product.description}</p>
-                <div className="mt-2 flex items-baseline gap-2">
-                    <b className="text-lg">৳{Number(product.price).toLocaleString()}</b>
-                    {product.old_price > 0 && (
-                        <s className="text-gray-400 text-sm">৳{Number(product.old_price).toLocaleString()}</s>
-                    )}
+                <Link href={product.url} className="block">
+                    <span className="text-xs text-mag font-semibold">{product.cat}</span>
+                    <h3 className="font-semibold">{product.name}</h3>
+                    <p className="text-sm text-gray-500 line-clamp-2">{product.description}</p>
+                </Link>
+
+                <div className="mt-auto pt-2">
+                    <div className="flex items-baseline gap-2">
+                        <b className="text-lg">৳{Number(product.price).toLocaleString()}</b>
+                        {product.old_price > 0 && (
+                            <s className="text-gray-400 text-sm">৳{Number(product.old_price).toLocaleString()}</s>
+                        )}
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                        <button
+                            type="button"
+                            className="flex-1 border border-gray-300 rounded-full py-1.5 text-xs font-semibold bg-white disabled:opacity-50"
+                            disabled={out || busy}
+                            onClick={() => add('bag')}
+                        >
+                            {t('Add to bag')}
+                        </button>
+                        <button
+                            type="button"
+                            className="flex-1 rounded-full py-1.5 text-xs font-semibold bg-black text-white disabled:opacity-50"
+                            disabled={out || busy}
+                            onClick={() => add('buy')}
+                        >
+                            {t('Buy it now')}
+                        </button>
+                    </div>
                 </div>
             </div>
-        </Link>
+        </div>
     );
 }

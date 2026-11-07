@@ -8,6 +8,7 @@ use App\Services\Checkout\CheckoutService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class CartController extends Controller
 {
@@ -16,9 +17,19 @@ class CartController extends Controller
         $lines = $checkout->lines();
         $totals = $checkout->totals($lines);
 
-        return view('cart', [
-            'lines' => $lines,
-            'sub' => $totals['subtotal'],
+        return Inertia::render('Store/Cart', [
+            'lines' => array_map(fn ($line) => [
+                'key' => $line['key'],
+                'product_id' => $line['p']->id,
+                'name' => $line['p']->name,
+                'size' => $line['size'],
+                'qty' => $line['qty'],
+                'price' => $line['p']->price,
+                'line_total' => $line['p']->price * $line['qty'],
+                'image_url' => $line['p']->image_url,
+                'url' => route('product', $line['p']),
+            ], $lines),
+            'subtotal' => $totals['subtotal'],
             'ship' => $totals['ship'],
             'total' => $totals['total'],
         ]);
@@ -30,9 +41,10 @@ class CartController extends Controller
         if ($product->stock <= 0) return back()->withErrors(__('Out of stock'));
 
         $size = (string) $r->input('size', '');
+        $qty = max(1, min(50, (int) $r->input('qty', 1)));
         $key = $product->id . '|' . $size;
         $cart = session('cart', []);
-        $cart[$key] = ['id' => $product->id, 'size' => $size, 'qty' => min(50, ($cart[$key]['qty'] ?? 0) + 1)];
+        $cart[$key] = ['id' => $product->id, 'size' => $size, 'qty' => min(50, ($cart[$key]['qty'] ?? 0) + $qty)];
         session(['cart' => $cart]);
 
         app(AnalyticsTracker::class)->event($r, 'add_to_cart', [

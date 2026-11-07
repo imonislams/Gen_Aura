@@ -67,4 +67,19 @@
     .inp:focus {
         outline: 2px solid rgba(142, 63, 208, 0.4);
     }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        border-radius: 9999px;
+        padding: 3px 9px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .badge-dark {
+        background: #2b2233;
+        color: #fff;
+    }
 }
