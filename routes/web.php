@@ -21,6 +21,7 @@ Route::middleware([SetLocale::class])->group(function () {
     Route::get('/reviews', [ShopController::class, 'reviews'])->name('reviews');
     Route::post('/reviews', [ShopController::class, 'storeReview'])->middleware('throttle:10,1')->name('reviews.store');
     Route::get('/contact', [ShopController::class, 'contact'])->name('contact');
+    Route::get('/about', [ShopController::class, 'about'])->name('about');
     Route::get('/lang/{l}', [ShopController::class, 'lang'])->name('lang');
 
     Route::get('/cart', [CartController::class, 'index'])->name('cart');

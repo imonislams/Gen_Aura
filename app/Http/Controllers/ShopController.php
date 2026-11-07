@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Review;
 use App\Models\Setting;
@@ -21,8 +22,30 @@ class ShopController extends Controller
             ? asset('storage/' . $settings['hero_image'])
             : $heroProduct?->image_url;
 
+        $featuredCategories = Category::active()->orderBy('sort_order')->take(4)->get(['id', 'name', 'slug']);
+        $featuredProducts = Product::active()->with('category')->featured()->latest()->take(4)->get();
+
+        $bestSellerIds = OrderItem::selectRaw('product_id, sum(qty) as sold')
+            ->whereNotNull('product_id')
+            ->whereHas('order', fn ($query) => $query->where('status', '!=', 'Cancelled'))
+            ->groupBy('product_id')
+            ->orderByDesc('sold')
+            ->take(4)
+            ->pluck('product_id');
+
+        $bestSellers = Product::active()->with('category')->whereIn('id', $bestSellerIds)->get()
+            ->sortBy(fn (Product $p) => $bestSellerIds->search($p->id))
+            ->values();
+
         return Inertia::render('Store/Home', [
             'products' => $products->map(fn (Product $p) => ProductPresenter::card($p))->values(),
+            'featuredCategories' => $featuredCategories->map(fn (Category $c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'slug' => $c->slug,
+            ])->values(),
+            'featuredProducts' => $featuredProducts->map(fn (Product $p) => ProductPresenter::card($p))->values(),
+            'bestSellers' => $bestSellers->map(fn (Product $p) => ProductPresenter::card($p))->values(),
             'reviews' => $reviews->map(fn (Review $r) => [
                 'id' => $r->id,
                 'name' => $r->name,
@@ -125,6 +148,8 @@ class ShopController extends Controller
     }
 
     public function contact() { return Inertia::render('Store/Contact'); }
+
+    public function about() { return Inertia::render('Store/About'); }
 
     public function lang(string $l)
     {

@@ -2,9 +2,10 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import StoreLayout from '../../Layouts/StoreLayout';
 import ProductCard from '../../Components/ProductCard';
 
-function Home({ products, reviews, heroImage, heroProduct }) {
+function Home({ products, featuredCategories, featuredProducts, bestSellers, reviews, heroImage, heroProduct }) {
     const { settings, translations } = usePage().props;
     const t = (value) => translations?.[value] ?? value;
+    const why = (settings.why_choose_us || '').split('|').map((item) => item.trim()).filter(Boolean);
 
     return (
         <>
@@ -22,27 +23,17 @@ function Home({ products, reviews, heroImage, heroProduct }) {
                             <h1 className="font-serif text-4xl md:text-6xl font-bold mt-4">{settings.title}</h1>
                             <p className="mt-4 text-white/85 max-w-md">{settings.sub}</p>
                             <div className="mt-6 flex flex-wrap gap-3">
-                                <Link
-                                    href="/shop"
-                                    className="bg-white text-mag font-semibold rounded-full px-6 py-3 hover:bg-white/90 transition"
-                                >
+                                <Link href="/shop" className="bg-white text-mag font-semibold rounded-full px-6 py-3 hover:bg-white/90 transition">
                                     {t('Shop now')}
                                 </Link>
-                                <Link
-                                    href="/reviews"
-                                    className="border border-white/60 rounded-full px-6 py-3 font-semibold hover:bg-white/10 transition"
-                                >
+                                <Link href="/reviews" className="border border-white/60 rounded-full px-6 py-3 font-semibold hover:bg-white/10 transition">
                                     {t('Reviews')}
                                 </Link>
                             </div>
                         </div>
                         {heroImage && (
                             <div className="relative hidden md:block">
-                                <img
-                                    src={heroImage}
-                                    alt={settings.name}
-                                    className="w-full max-w-sm mx-auto aspect-square object-cover rounded-2xl shadow-2xl rotate-2"
-                                />
+                                <img src={heroImage} alt={settings.name} className="w-full max-w-sm mx-auto aspect-square object-cover rounded-2xl shadow-2xl rotate-2" />
                                 {!settings.hero_image && heroProduct && (
                                     <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white text-gray-900 rounded-xl px-4 py-2 text-sm font-semibold shadow whitespace-nowrap">
                                         {heroProduct.name} · ৳{Number(heroProduct.price).toLocaleString()}
@@ -54,26 +45,80 @@ function Home({ products, reviews, heroImage, heroProduct }) {
                 </div>
             </section>
 
+            {featuredCategories.length > 0 && (
+                <section className="max-w-6xl mx-auto px-4 py-8">
+                    <h2 className="font-serif text-3xl mb-4">Featured categories</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {featuredCategories.map((category) => (
+                            <Link key={category.id} href={`/shop?cat=${encodeURIComponent(category.name)}`} className="bg-white rounded-2xl p-6 text-center shadow-sm hover:shadow-md transition">
+                                <div className="w-12 h-12 rounded-full grad mx-auto mb-2" />
+                                <b>{category.name}</b>
+                            </Link>
+                        ))}
+                    </div>
+                </section>
+            )}
+
+            {featuredProducts.length > 0 && (
+                <section className="max-w-6xl mx-auto px-4 py-4">
+                    <h2 className="font-serif text-3xl mb-4">Featured products</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {featuredProducts.map((product) => <ProductCard key={product.id} product={product} t={t} />)}
+                    </div>
+                </section>
+            )}
+
+            {(settings.promo_title || settings.promo_text) && (
+                <section className="max-w-6xl mx-auto px-4 py-6">
+                    <div className="rounded-3xl grad text-white text-center p-8">
+                        {settings.promo_title && <h2 className="font-serif text-3xl font-bold">{settings.promo_title}</h2>}
+                        {settings.promo_text && <p className="mt-2 text-white/85">{settings.promo_text}</p>}
+                        <Link href="/shop" className="inline-block mt-4 bg-white text-mag font-semibold rounded-full px-6 py-3">
+                            {t('Shop now')}
+                        </Link>
+                    </div>
+                </section>
+            )}
+
             <section className="max-w-6xl mx-auto px-4 py-8">
-                <h2 className="font-serif text-3xl mb-4">{t('All products')}</h2>
+                <h2 className="font-serif text-3xl mb-4">{t('New arrivals')}</h2>
                 {products.length > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {products.map((product) => (
-                            <ProductCard key={product.id} product={product} t={t} />
-                        ))}
+                        {products.map((product) => <ProductCard key={product.id} product={product} t={t} />)}
                     </div>
                 ) : (
                     <p className="text-gray-500">{t('No products yet.')}</p>
                 )}
             </section>
 
+            {bestSellers.length > 0 && (
+                <section className="max-w-6xl mx-auto px-4 py-4">
+                    <h2 className="font-serif text-3xl mb-4">Best selling</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {bestSellers.map((product) => <ProductCard key={product.id} product={product} t={t} />)}
+                    </div>
+                </section>
+            )}
+
+            {why.length > 0 && (
+                <section className="max-w-6xl mx-auto px-4 py-6">
+                    <h2 className="font-serif text-3xl mb-4">{t('Why choose us')}</h2>
+                    <div className="grid md:grid-cols-3 gap-4">
+                        {why.map((item, index) => (
+                            <div key={index} className="bg-white rounded-2xl p-5 text-center shadow-sm">
+                                <div className="text-2xl">✦</div>
+                                <b>{item}</b>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            )}
+
             {reviews.length > 0 && (
                 <section className="max-w-6xl mx-auto px-4 py-8">
                     <h2 className="font-serif text-3xl mb-4">
                         {t('Customers are saying')}{' '}
-                        <Link href="/reviews" className="text-sm text-pur font-semibold">
-                            {t('All reviews')}
-                        </Link>
+                        <Link href="/reviews" className="text-sm text-pur font-semibold">{t('All reviews')}</Link>
                     </h2>
                     <div className="grid md:grid-cols-3 gap-4">
                         {reviews.map((review) => (

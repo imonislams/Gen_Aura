@@ -37,9 +37,13 @@ export default function AdminLayout({ children }) {
         <div className="min-h-screen flex">
             <aside className="hidden md:flex md:flex-col w-64 shrink-0 bg-white border-r border-purple-100 sticky top-0 h-screen p-4 overflow-auto">
                 <Link href="/admin" className="flex items-center gap-2 mb-6 px-2">
-                    <span className="w-8 h-8 rounded-lg grad flex items-center justify-center text-white font-serif font-bold">
-                        A
-                    </span>
+                    {settings.logo ? (
+                        <img src={`/storage/${settings.logo}`} alt={settings.name} className="h-8 object-contain" />
+                    ) : (
+                        <span className="w-8 h-8 rounded-lg grad flex items-center justify-center text-white font-serif font-bold">
+                            A
+                        </span>
+                    )}
                     <span className="font-serif text-lg font-semibold gtext">{settings.name}</span>
                 </Link>
 

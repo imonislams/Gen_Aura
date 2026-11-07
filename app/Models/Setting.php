@@ -17,6 +17,14 @@ class Setting extends Model
         'wa' => '8801700000000', 'ship' => '60', 'cats' => 'T-Shirt,Shirt,Pant,Panjabi',
         'fb' => 'https://www.facebook.com/p/GEN-AURA-61579509689159/',
         'hero_image' => '',
+        'phone' => '', 'email' => '', 'address' => '',
+        'logo' => '', 'favicon' => '', 'instagram' => '', 'youtube' => '',
+        'currency' => 'BDT', 'order_prefix' => 'GA', 'cod_enabled' => '1', 'stock_display' => '1',
+        'promo_title' => '', 'promo_text' => '',
+        'why_choose_us' => 'Shipped from Dhaka|Easy Returns|Quality Checked',
+        'about_title' => 'About GEN AURA',
+        'about_body' => 'GEN AURA is a Bangladesh-based clothing store offering premium T-shirts, shirts, pants and panjabis with cash-on-delivery across the country.',
+        'about_image' => '',
     ];
     protected static ?array $cache = null;
     public static function all_(): array
