@@ -2,12 +2,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\ContactMessage;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Review;
 use App\Models\Setting;
 use App\Support\Store\ProductPresenter;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 
 class ShopController extends Controller
@@ -148,6 +150,38 @@ class ShopController extends Controller
     }
 
     public function contact() { return Inertia::render('Store/Contact'); }
+
+    public function storeContact(Request $r)
+    {
+        if ($r->filled('website')) {
+            return back()->with('ok', __('Thank you! We will contact you soon.'));
+        }
+
+        $d = $r->validate([
+            'name' => 'required|max:80',
+            'phone' => ['required', 'max:20', fn ($a, $v, $f) => strlen(preg_replace('/\D/', '', $v)) < 10 ? $f(__('Please enter a valid phone number')) : null],
+            'email' => 'nullable|email|max:120',
+            'subject' => 'nullable|max:150',
+            'message' => 'required|max:2000',
+        ]);
+
+        ContactMessage::create($d);
+
+        $to = config('shop.order_email') ?: (Setting::all_()['email'] ?? null);
+        if ($to) {
+            try {
+                $html = '<h2>New contact message</h2>'
+                    . '<p><b>' . e($d['name']) . '</b><br>Phone: ' . e($d['phone']) . '<br>Email: ' . e($d['email'] ?? '—') . '</p>'
+                    . '<p><b>Subject:</b> ' . e($d['subject'] ?? '—') . '</p>'
+                    . '<p>' . nl2br(e($d['message'])) . '</p>';
+                Mail::html($html, fn ($message) => $message->to($to)->subject('Contact message from ' . $d['name']));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        return back()->with('ok', __('Thank you! We will contact you soon.'));
+    }
 
     public function about() { return Inertia::render('Store/About'); }
 
