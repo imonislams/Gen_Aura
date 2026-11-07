@@ -1,5 +1,6 @@
 <?php
 use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -51,6 +52,20 @@ Route::middleware([SetLocale::class])->group(function () {
             Route::delete('orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
             Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
             Route::get('customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
+            Route::prefix('analytics')->name('analytics.')->group(function () {
+                Route::get('/', [AnalyticsController::class, 'overview'])->name('overview');
+                Route::get('live', [AnalyticsController::class, 'live'])->name('live');
+                Route::get('live/data', [AnalyticsController::class, 'liveData'])->name('live.data')->middleware('throttle:60,1');
+                Route::get('visitors', [AnalyticsController::class, 'visitors'])->name('visitors');
+                Route::get('visitors/{uuid}', [AnalyticsController::class, 'visitor'])->name('visitor');
+                Route::get('activity', [AnalyticsController::class, 'activity'])->name('activity');
+                Route::get('products', [AnalyticsController::class, 'products'])->name('products');
+                Route::get('products/{product}', [AnalyticsController::class, 'product'])->name('product');
+                Route::get('cart', [AnalyticsController::class, 'cart'])->name('cart');
+                Route::get('checkout', [AnalyticsController::class, 'checkout'])->name('checkout');
+                Route::get('funnel', [AnalyticsController::class, 'funnel'])->name('funnel');
+                Route::get('reports', [AnalyticsController::class, 'reports'])->name('reports');
+            });
             Route::get('reviews', [MiscController::class, 'reviews'])->name('reviews');
             Route::patch('reviews/{review}/status', [MiscController::class, 'reviewStatus'])->name('reviews.status');
             Route::delete('reviews/{review}', [MiscController::class, 'reviewDestroy'])->name('reviews.destroy');
