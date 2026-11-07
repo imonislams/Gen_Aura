@@ -1,0 +1,49 @@
+<?php
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\Admin;
+use App\Models\Review;
+use App\Models\Setting;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+
+class MiscController extends Controller
+{
+    public function reviews() { return view('admin.reviews', ['reviews' => Review::latest()->get()]); }
+
+    public function reviewDestroy(Review $review)
+    {
+        $review->delete();
+        return back()->with('ok', 'Review deleted');
+    }
+
+    public function settings() { return view('admin.settings'); }
+
+    public function settingsSave(Request $r)
+    {
+        $d = $r->validate([
+            'name' => 'required|max:60', 'ar' => 'nullable|max:60', 'top' => 'nullable|max:120', 'title' => 'nullable|max:120', 'sub' => 'nullable|max:300',
+            'wa' => 'nullable|max:20', 'ship' => 'required|integer|min:0', 'cats' => 'required|max:200', 'fb' => 'nullable|max:200',
+            'hero_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+        ]);
+        unset($d['hero_image']);
+        if ($r->hasFile('hero_image')) {
+            $old = Setting::all_()['hero_image'] ?? '';
+            if ($old && str_starts_with($old, 'hero/')) Storage::disk('public')->delete($old);
+            $d['hero_image'] = $r->file('hero_image')->store('hero', 'public');
+        }
+        Setting::put($d);
+        return back()->with('ok', 'Settings saved');
+    }
+
+    public function password(Request $r)
+    {
+        $d = $r->validate(['username' => 'required|max:40', 'current' => 'required', 'new_password' => 'required|min:6|max:100']);
+        $a = Admin::find(session('admin_id'));
+        if (!Hash::check($d['current'], $a->password)) return back()->withErrors('Current password is wrong');
+        $a->update(['username' => $d['username'], 'password' => $d['new_password']]);
+        return back()->with('ok', 'Login details updated');
+    }
+}
