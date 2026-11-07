@@ -5,12 +5,16 @@ namespace App\Services\Checkout;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Setting;
+use App\Services\Inventory\StockService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use RuntimeException;
 
 class CheckoutService
 {
+    public function __construct(private StockService $stock)
+    {
+    }
     public function lines(): array
     {
         $cart = session('cart', []);
@@ -57,14 +61,13 @@ class CheckoutService
             $order = DB::transaction(function () use ($lines, $customer, $totals, $idempotencyKey) {
                 $items = [];
                 $subtotal = 0;
+                $stockLines = [];
 
                 foreach ($lines as $line) {
                     $product = Product::lockForUpdate()->find($line['p']->id);
                     if (!$product || $product->status !== 'active' || $product->stock < $line['qty']) {
                         throw new RuntimeException(($product->name ?? 'Product') . ': ' . __('Out of stock'));
                     }
-
-                    $product->decrement('stock', $line['qty']);
 
                     $items[] = [
                         'product_id' => $product->id,
@@ -74,6 +77,7 @@ class CheckoutService
                         'price' => $product->price,
                     ];
 
+                    $stockLines[] = ['product' => $product, 'qty' => $line['qty']];
                     $subtotal += $product->price * $line['qty'];
                 }
 
@@ -87,6 +91,14 @@ class CheckoutService
                 ]);
 
                 $order->items()->createMany($items);
+
+                foreach ($stockLines as $entry) {
+                    $this->stock->apply($entry['product'], -$entry['qty'], 'order_sale', [
+                        'reference_type' => 'order',
+                        'reference_id' => $order->id,
+                        'note' => 'Order sale',
+                    ]);
+                }
 
                 return $order->load('items');
             });

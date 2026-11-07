@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\MiscController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
@@ -54,6 +55,9 @@ Route::middleware([SetLocale::class])->group(function () {
             Route::delete('orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
             Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
             Route::get('customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
+            Route::get('inventory', [InventoryController::class, 'index'])->name('inventory.index');
+            Route::get('inventory/movements', [InventoryController::class, 'movements'])->name('inventory.movements');
+            Route::post('inventory/{product}/adjust', [InventoryController::class, 'adjust'])->name('inventory.adjust');
             Route::prefix('analytics')->name('analytics.')->group(function () {
                 Route::get('/', [AnalyticsController::class, 'overview'])->name('overview');
                 Route::get('live', [AnalyticsController::class, 'live'])->name('live');

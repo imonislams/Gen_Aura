@@ -6,13 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Setting;
+use App\Services\Inventory\StockService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class OrderController extends Controller
 {
+    public function __construct(private StockService $stock)
+    {
+    }
     public function index(Request $r)
     {
         $q = Order::with('items')->latest();
@@ -105,18 +110,43 @@ class OrderController extends Controller
     public function update(Request $r, Order $order)
     {
         $st = $r->validate(['status' => ['required', Rule::in(Order::STATUS)]])['status'];
-        $was = $order->status === 'Cancelled';
-        $now = $st === 'Cancelled';
 
-        if ($was !== $now) {
-            foreach ($order->items as $i) {
-                $p = Product::find($i->product_id);
-                if (!$p) continue;
-                $now ? $p->increment('stock', $i->qty) : $p->update(['stock' => max(0, $p->stock - $i->qty)]);
-            }
+        try {
+            DB::transaction(function () use ($order, $st) {
+                $locked = Order::lockForUpdate()->findOrFail($order->id);
+                $was = $locked->status === 'Cancelled';
+                $now = $st === 'Cancelled';
+
+                if ($was !== $now) {
+                    foreach ($locked->items as $item) {
+                        $product = Product::lockForUpdate()->find($item->product_id);
+                        if (!$product) {
+                            continue;
+                        }
+
+                        if ($now) {
+                            $this->stock->apply($product, (int) $item->qty, 'cancellation_restore', [
+                                'reference_type' => 'order',
+                                'reference_id' => $locked->id,
+                                'note' => 'Order cancelled',
+                                'admin_id' => session('admin_id'),
+                            ]);
+                        } else {
+                            $this->stock->apply($product, -(int) $item->qty, 'reopen_deduction', [
+                                'reference_type' => 'order',
+                                'reference_id' => $locked->id,
+                                'note' => 'Cancelled order reopened',
+                                'admin_id' => session('admin_id'),
+                            ]);
+                        }
+                    }
+                }
+
+                $locked->update(['status' => $st]);
+            });
+        } catch (\RuntimeException $e) {
+            return back()->withErrors($e->getMessage());
         }
-
-        $order->update(['status' => $st]);
 
         return back()->with('ok', 'Order updated');
     }

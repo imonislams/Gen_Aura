@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\InventoryMovement;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -90,14 +91,42 @@ class ProductController extends Controller
 
     public function store(Request $r)
     {
-        Product::create($this->payload($r, new Product()));
+        $product = Product::create($this->payload($r, new Product()));
+
+        if ((int) $product->stock > 0) {
+            InventoryMovement::create([
+                'product_id' => $product->id,
+                'type' => 'initial_stock',
+                'quantity_delta' => (int) $product->stock,
+                'stock_before' => 0,
+                'stock_after' => (int) $product->stock,
+                'note' => 'Product created',
+                'admin_id' => session('admin_id'),
+                'created_at' => now(),
+            ]);
+        }
 
         return redirect()->route('admin.products.index')->with('ok', 'Product added');
     }
 
     public function update(Request $r, Product $product)
     {
+        $oldStock = (int) $product->stock;
+
         $product->update($this->payload($r, $product));
+
+        if ((int) $product->stock !== $oldStock) {
+            InventoryMovement::create([
+                'product_id' => $product->id,
+                'type' => 'manual_adjustment',
+                'quantity_delta' => (int) $product->stock - $oldStock,
+                'stock_before' => $oldStock,
+                'stock_after' => (int) $product->stock,
+                'note' => 'Admin product edit',
+                'admin_id' => session('admin_id'),
+                'created_at' => now(),
+            ]);
+        }
 
         return redirect()->route('admin.products.index')->with('ok', 'Product updated');
     }
