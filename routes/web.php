@@ -1,5 +1,6 @@
 <?php
 use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MiscController;
 use App\Http\Controllers\Admin\OrderController;
@@ -31,10 +32,16 @@ Route::middleware([SetLocale::class])->group(function () {
             Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
             Route::post('logout', [AuthController::class, 'logout'])->name('logout');
             Route::resource('products', AdminProductController::class)->except('show');
+            Route::patch('products/{product}/restore', [AdminProductController::class, 'restore'])->name('products.restore')->withTrashed();
+            Route::get('categories', [CategoryController::class, 'index'])->name('categories.index');
+            Route::post('categories', [CategoryController::class, 'store'])->name('categories.store');
+            Route::put('categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
+            Route::delete('categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
             Route::get('orders', [OrderController::class, 'index'])->name('orders');
             Route::patch('orders/{order}', [OrderController::class, 'update'])->name('orders.update');
             Route::delete('orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
             Route::get('reviews', [MiscController::class, 'reviews'])->name('reviews');
+            Route::patch('reviews/{review}/status', [MiscController::class, 'reviewStatus'])->name('reviews.status');
             Route::delete('reviews/{review}', [MiscController::class, 'reviewDestroy'])->name('reviews.destroy');
             Route::get('settings', [MiscController::class, 'settings'])->name('settings');
             Route::post('settings', [MiscController::class, 'settingsSave'])->name('settings.save');

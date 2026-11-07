@@ -11,8 +11,8 @@ class ShopController extends Controller
 {
     public function home()
     {
-        $products = Product::latest()->take(8)->get();
-        $reviews = Review::latest()->take(3)->get();
+        $products = Product::active()->latest()->take(8)->get();
+        $reviews = Review::approved()->latest()->take(3)->get();
         $settings = Setting::all_();
         $heroProduct = $products->first();
         $heroImage = !empty($settings['hero_image'])
@@ -48,7 +48,7 @@ class ShopController extends Controller
 
     public function shop(Request $r)
     {
-        $q = Product::query();
+        $q = Product::active();
         if ($r->filled('cat')) $q->where('cat', $r->cat);
         if ($r->filled('q')) $q->where('name', 'like', '%' . $r->q . '%');
         if ($r->filled('min')) $q->where('price', '>=', (int) $r->min);
@@ -62,12 +62,14 @@ class ShopController extends Controller
 
     public function product(Product $product)
     {
+        abort_if($product->status !== 'active', 404);
+
         return view('product', ['p' => $product]);
     }
 
     public function reviews()
     {
-        $all = Review::latest()->get();
+        $all = Review::approved()->latest()->get();
         return view('reviews', ['reviews' => $all, 'avg' => $all->count() ? round($all->avg('stars'), 2) : 0]);
     }
 
@@ -75,8 +77,9 @@ class ShopController extends Controller
     {
         $d = $r->validate(['name' => 'nullable|max:60', 'text' => 'required|max:500', 'stars' => 'required|integer|between:1,5']);
         $d['name'] = $d['name'] ?: 'Customer';
+        $d['status'] = 'pending';
         Review::create($d);
-        return back()->with('ok', __('Thank you! Your review is live.'));
+        return back()->with('ok', __('Thank you! Your review will appear after approval.'));
     }
 
     public function contact() { return Inertia::render('Store/Contact'); }

@@ -8,10 +8,26 @@ use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class MiscController extends Controller
 {
-    public function reviews() { return view('admin.reviews', ['reviews' => Review::latest()->get()]); }
+    public function reviews(Request $r)
+    {
+        $q = Review::with('product')->latest();
+        if ($r->filled('status')) $q->where('status', $r->status);
+        if ($r->filled('q')) $q->where(fn ($x) => $x->where('name', 'like', '%' . $r->q . '%')->orWhere('text', 'like', '%' . $r->q . '%'));
+
+        return view('admin.reviews', ['reviews' => $q->paginate(30)->withQueryString()]);
+    }
+
+    public function reviewStatus(Request $r, Review $review)
+    {
+        $d = $r->validate(['status' => ['required', Rule::in(['pending', 'approved', 'rejected'])]]);
+        $review->update(['status' => $d['status']]);
+
+        return back()->with('ok', 'Review ' . $d['status']);
+    }
 
     public function reviewDestroy(Review $review)
     {

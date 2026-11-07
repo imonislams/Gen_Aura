@@ -14,7 +14,7 @@
         <span class="font-serif text-lg font-semibold gtext">{{ $s['name'] }}</span>
       </a>
       <nav class="flex flex-col gap-1">
-        @foreach(['dashboard' => 'Dashboard', 'products.index' => 'Products', 'orders' => 'Orders', 'reviews' => 'Reviews', 'settings' => 'Settings'] as $r => $l)
+        @foreach(['dashboard' => 'Dashboard', 'products.index' => 'Products', 'categories.index' => 'Categories', 'orders' => 'Orders', 'reviews' => 'Reviews', 'settings' => 'Settings'] as $r => $l)
           <a href="{{ route('admin.' . $r) }}" class="px-3 py-2 rounded-lg text-sm font-semibold {{ request()->routeIs('admin.' . explode('.', $r)[0] . '*') ? 'grad text-white' : 'text-gray-600 hover:bg-purple-50' }}">{{ $l }}</a>
         @endforeach
       </nav>
@@ -23,7 +23,7 @@
 
     <div class="flex-1 min-w-0 flex flex-col">
       <div class="md:hidden flex gap-2 p-3 overflow-x-auto bg-white border-b sticky top-0 z-20">
-        @foreach(['dashboard' => 'Dashboard', 'products.index' => 'Products', 'orders' => 'Orders', 'reviews' => 'Reviews', 'settings' => 'Settings'] as $r => $l)
+        @foreach(['dashboard' => 'Dashboard', 'products.index' => 'Products', 'categories.index' => 'Categories', 'orders' => 'Orders', 'reviews' => 'Reviews', 'settings' => 'Settings'] as $r => $l)
           <a href="{{ route('admin.' . $r) }}" class="whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold {{ request()->routeIs('admin.' . explode('.', $r)[0] . '*') ? 'grad text-white' : 'bg-white border' }}">{{ $l }}</a>
         @endforeach
         <form method="POST" action="{{ route('admin.logout') }}" class="ml-auto">@csrf<button class="whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold bg-red-500 text-white">Log out</button></form>

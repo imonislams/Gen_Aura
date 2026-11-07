@@ -13,7 +13,7 @@ class CartController extends Controller
     private function lines(): array
     {
         $cart = session('cart', []);
-        $products = Product::whereIn('id', collect($cart)->pluck('id'))->get()->keyBy('id');
+        $products = Product::active()->whereIn('id', collect($cart)->pluck('id'))->get()->keyBy('id');
         $lines = [];
         foreach ($cart as $k => $c) {
             if ($p = $products->get($c['id'])) $lines[] = ['key' => $k, 'p' => $p, 'size' => $c['size'], 'qty' => $c['qty']];
@@ -31,6 +31,7 @@ class CartController extends Controller
 
     public function add(Request $r, Product $product)
     {
+        if ($product->status !== 'active') return back()->withErrors(__('This product is not available'));
         if ($product->stock <= 0) return back()->withErrors(__('Out of stock'));
         $size = (string) $r->input('size', '');
         $key = $product->id . '|' . $size;
@@ -67,7 +68,7 @@ class CartController extends Controller
                 $items = []; $sub = 0;
                 foreach ($lines as $l) {
                     $p = Product::lockForUpdate()->find($l['p']->id);
-                    if (!$p || $p->stock < $l['qty']) throw new \RuntimeException(($p->name ?? 'Product') . ': ' . __('Out of stock'));
+                    if (!$p || $p->status !== 'active' || $p->stock < $l['qty']) throw new \RuntimeException(($p->name ?? 'Product') . ': ' . __('Out of stock'));
                     $p->decrement('stock', $l['qty']);
                     $items[] = ['product_id' => $p->id, 'name' => $p->name, 'size' => $l['size'], 'qty' => $l['qty'], 'price' => $p->price];
                     $sub += $p->price * $l['qty'];
