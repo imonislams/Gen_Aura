@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
@@ -13,31 +14,78 @@ class DashboardController extends Controller
 {
     public function index(Request $r)
     {
-        $to = Carbon::parse($r->input('to', now()->toDateString()))->endOfDay();
-        $from = Carbon::parse($r->input('from', now()->subDays(29)->toDateString()))->startOfDay();
-        if ($from->diffInDays($to) > 92) $from = $to->copy()->subDays(92)->startOfDay();
+        $tz = config('shop.timezone', 'Asia/Dhaka');
+        $today = Carbon::now($tz)->startOfDay();
 
-        $orders = Order::with('items')->where('status', '!=', 'Cancelled')->where('created_at', '>=', now()->startOfMonth()->subMonths(11))->get();
-        $daily = [];
-        for ($d = $from->copy(); $d <= $to; $d->addDay()) $daily[$d->toDateString()] = ['l' => $d->format('j/n'), 'n' => 0, 'r' => 0, 'u' => 0];
-        $monthly = [];
-        for ($i = 11; $i >= 0; $i--) { $m = now()->startOfMonth()->subMonths($i); $monthly[$m->format('Y-m')] = ['l' => $m->format('M'), 'n' => 0, 'r' => 0, 'u' => 0]; }
-        foreach ($orders as $o) {
-            $u = $o->items->sum('qty'); $dk = $o->created_at->toDateString(); $mk = $o->created_at->format('Y-m');
-            if (isset($daily[$dk])) { $daily[$dk]['n']++; $daily[$dk]['r'] += $o->total; $daily[$dk]['u'] += $u; }
-            if (isset($monthly[$mk])) { $monthly[$mk]['n']++; $monthly[$mk]['r'] += $o->total; $monthly[$mk]['u'] += $u; }
+        $to = Carbon::parse($r->input('to', $today->toDateString()), $tz)->endOfDay();
+        $from = Carbon::parse($r->input('from', $today->copy()->subDays(29)->toDateString()), $tz)->startOfDay();
+
+        if ($from->diffInDays($to) > 92) {
+            $from = $to->copy()->subDays(92)->startOfDay();
         }
-        $today = $orders->filter(fn($o) => $o->created_at->isToday());
+
+        $fromUtc = $from->copy()->utc();
+        $toUtc = $to->copy()->utc();
+
+        $orders = Order::with('items')
+            ->where('status', '!=', 'Cancelled')
+            ->where('created_at', '>=', Carbon::now($tz)->startOfMonth()->subMonths(11)->utc())
+            ->get();
+
+        $daily = [];
+        for ($d = $from->copy(); $d <= $to; $d->addDay()) {
+            $daily[$d->toDateString()] = ['l' => $d->format('j/n'), 'n' => 0, 'r' => 0, 'u' => 0];
+        }
+
+        $monthly = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $m = Carbon::now($tz)->startOfMonth()->subMonths($i);
+            $monthly[$m->format('Y-m')] = ['l' => $m->format('M'), 'n' => 0, 'r' => 0, 'u' => 0];
+        }
+
+        foreach ($orders as $order) {
+            $created = $order->created_at->copy()->setTimezone($tz);
+            $u = $order->items->sum('qty');
+            $dk = $created->toDateString();
+            $mk = $created->format('Y-m');
+
+            if (isset($daily[$dk])) {
+                $daily[$dk]['n']++;
+                $daily[$dk]['r'] += $order->total;
+                $daily[$dk]['u'] += $u;
+            }
+            if (isset($monthly[$mk])) {
+                $monthly[$mk]['n']++;
+                $monthly[$mk]['r'] += $order->total;
+                $monthly[$mk]['u'] += $u;
+            }
+        }
+
+        $todayOrders = $orders->filter(
+            fn ($order) => $order->created_at->copy()->setTimezone($tz)->isSameDay(Carbon::now($tz))
+        );
+
         $top = OrderItem::selectRaw('name, SUM(qty) as q')
-            ->whereHas('order', fn($q) => $q->where('status', '!=', 'Cancelled')->whereBetween('created_at', [$from, $to]))
-            ->groupBy('name')->orderByDesc('q')->limit(5)->get();
+            ->whereHas('order', fn ($query) => $query->where('status', '!=', 'Cancelled')->whereBetween('created_at', [$fromUtc, $toUtc]))
+            ->groupBy('name')
+            ->orderByDesc('q')
+            ->limit(5)
+            ->get();
+
         $low = Product::where('stock', '<=', 3)->orderBy('stock')->get();
-        $sum = fn($k) => array_sum(array_column($daily, $k));
+        $sum = fn ($key) => array_sum(array_column($daily, $key));
+
         $stats = [
-            'Today orders' => $today->count(), 'Today revenue' => '৳' . number_format($today->sum('total')),
-            'Orders (range)' => $sum('n'), 'Revenue (range)' => '৳' . number_format($sum('r')), 'Units sold (range)' => $sum('u'),
-            'Pending' => Order::where('status', 'Pending')->count(), 'Low / out of stock' => $low->count(), 'Products' => Product::count(),
+            'Today orders' => $todayOrders->count(),
+            'Today revenue' => '৳' . number_format($todayOrders->sum('total')),
+            'Orders (range)' => $sum('n'),
+            'Revenue (range)' => '৳' . number_format($sum('r')),
+            'Units sold (range)' => $sum('u'),
+            'Pending' => Order::where('status', 'Pending')->count(),
+            'Low / out of stock' => $low->count(),
+            'Products' => Product::count(),
         ];
+
         return Inertia::render('Admin/Dashboard', [
             'daily' => array_values($daily),
             'monthly' => array_values($monthly),

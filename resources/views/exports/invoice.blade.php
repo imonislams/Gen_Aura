@@ -27,7 +27,7 @@
       <td class="right">
         <div style="font-size:18px;font-weight:bold">INVOICE</div>
         <div class="muted">{{ $order->order_number ?: '#' . $order->id }}</div>
-        <div class="muted">{{ $order->created_at?->format('d M Y, h:i A') }}</div>
+        <div class="muted">{{ $order->created_at?->copy()->setTimezone(config('shop.timezone', 'Asia/Dhaka'))->format('d M Y, h:i A') }}</div>
       </td>
     </tr>
   </table>

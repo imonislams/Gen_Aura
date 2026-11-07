@@ -2,6 +2,7 @@ import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import Pagination from '../../../Components/Pagination';
+import { dhakaDate } from '../../../lib/datetime';
 
 function Reviews({ reviews, filters, statuses }) {
     const [q, setQ] = useState(filters?.q ?? '');
@@ -58,7 +59,7 @@ function Reviews({ reviews, filters, statuses }) {
                                     <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${review.status === 'approved' ? 'bg-green-50 text-green-700' : review.status === 'rejected' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-700'}`}>
                                         {review.status}
                                     </span>
-                                    <span className="text-xs text-gray-400">{review.created_at ? new Date(review.created_at).toLocaleDateString() : ''}</span>
+                                    <span className="text-xs text-gray-400">{dhakaDate(review.created_at)}</span>
                                 </div>
                                 <p className="mt-1 text-sm">{review.text}</p>
                             </div>

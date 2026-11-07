@@ -118,7 +118,7 @@ class CheckoutService
 
     public function mail(Order $order): void
     {
-        $to = config('shop.order_email') ?: config('mail.from.address');
+        $to = config('shop.order_email');
         if (!$to) {
             return;
         }

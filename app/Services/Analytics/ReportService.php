@@ -164,7 +164,7 @@ class ReportService
 
         $rows = $orders->map(fn ($order) => [
             $order->order_number ?: '#' . $order->id,
-            $order->created_at?->format('d M Y, h:i A'),
+            $order->created_at?->copy()->setTimezone($this->tz())->format('d M Y, h:i A'),
             $order->name,
             $order->phone,
             $order->items->count(),
@@ -205,7 +205,7 @@ class ReportService
             ->get()
             ->map(fn ($order) => [
                 $order->order_number ?: '#' . $order->id,
-                $order->created_at?->format('d M Y, h:i A'),
+                $order->created_at?->copy()->setTimezone($this->tz())->format('d M Y, h:i A'),
                 $order->name,
                 $order->phone,
                 (int) $order->total,
@@ -245,7 +245,7 @@ class ReportService
             ->limit(1000)
             ->get()
             ->map(fn ($movement) => [
-                $movement->created_at?->format('d M Y, h:i A'),
+                $movement->created_at?->copy()->setTimezone($this->tz())->format('d M Y, h:i A'),
                 $movement->product?->name ?? 'Deleted product',
                 $movement->type,
                 (int) $movement->quantity_delta,
@@ -270,7 +270,7 @@ class ReportService
                 $customer->phone,
                 (int) $customer->total_orders,
                 (int) $customer->total_purchase,
-                $customer->last_order_at?->format('d M Y'),
+                $customer->last_order_at?->copy()->setTimezone($this->tz())->format('d M Y'),
             ];
             if ($withAverage) {
                 $row[] = $customer->total_orders > 0 ? (int) round($customer->total_purchase / $customer->total_orders) : 0;

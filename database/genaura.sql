@@ -1,7 +1,7 @@
 -- GEN AURA database (import in phpMyAdmin) - use this OR "php artisan migrate", not both.
--- Admin login: admin / admin   (change it in Admin -> Settings)
-CREATE DATABASE IF NOT EXISTS `genaura` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `genaura`;
+-- Admin login: admin / admin   (you will be forced to change it on first login)
+CREATE DATABASE IF NOT EXISTS `gen_aura` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `gen_aura`;
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS `order_items`, `orders`, `products`, `reviews`, `settings`, `admins`;
 SET FOREIGN_KEY_CHECKS = 1;
@@ -10,6 +10,7 @@ CREATE TABLE `admins` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `username` VARCHAR(255) NOT NULL UNIQUE,
   `password` VARCHAR(255) NOT NULL,
+  `must_change_password` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP NULL, `updated_at` TIMESTAMP NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

@@ -2,7 +2,7 @@ import { Head, useForm, usePage } from '@inertiajs/react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 
 function Settings({ adminUsername }) {
-    const { settings } = usePage().props;
+    const { settings, auth } = usePage().props;
 
     const settingsForm = useForm({
         name: settings.name ?? '',
@@ -163,6 +163,11 @@ function Settings({ adminUsername }) {
 
             <form onSubmit={savePassword} className="bg-white rounded-2xl p-5 grid md:grid-cols-3 gap-x-5">
                 <h2 className="font-semibold md:col-span-3 mb-2">Change admin login</h2>
+                {auth?.admin?.must_change_password && (
+                    <div className="md:col-span-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 text-sm mb-3">
+                        You are using the default password. Change it below before using the rest of the admin panel.
+                    </div>
+                )}
                 <label className="block text-sm mb-3">
                     Username
                     <input className="inp" value={passwordForm.data.username} onChange={(event) => passwordForm.setData('username', event.target.value)} required />

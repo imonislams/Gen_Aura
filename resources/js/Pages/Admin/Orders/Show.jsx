@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { dhakaDateTime } from '../../../lib/datetime';
 
 function OrderShow({ order, statuses }) {
     const [status, setStatus] = useState(order.status);
@@ -35,8 +36,7 @@ function OrderShow({ order, statuses }) {
                         Order {order.order_number || `#${order.id}`}
                     </h1>
                     <p className="text-sm text-gray-500">
-                        {order.created_at ? new Date(order.created_at).toLocaleString() : ''} ·{' '}
-                        {order.payment_method}
+                        {dhakaDateTime(order.created_at)} · {order.payment_method}
                     </p>
                 </div>
                 <div className="flex gap-2">
@@ -113,7 +113,7 @@ function OrderShow({ order, statuses }) {
                                 <div key={entry.id} className="relative pb-4">
                                     <span className="absolute -left-[15px] top-1.5 w-2.5 h-2.5 rounded-full bg-purple-500 ring-4 ring-purple-50" />
                                     <div className="text-xs font-bold text-gray-400">
-                                        {entry.created_at ? new Date(entry.created_at).toLocaleString() : ''}
+                                        {dhakaDateTime(entry.created_at)}
                                     </div>
                                     <div className="font-semibold">{entry.status}</div>
                                     {entry.note && <div className="text-xs text-gray-500">{entry.note}</div>}

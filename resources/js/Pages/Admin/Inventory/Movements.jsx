@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import Pagination from '../../../Components/Pagination';
+import { dhakaDateTime } from '../../../lib/datetime';
 
 function Movements({ movements, filters, types, products }) {
     const [product, setProduct] = useState(filters?.product ?? '');
@@ -51,7 +52,7 @@ function Movements({ movements, filters, types, products }) {
                         <tbody>
                             {movements.data.map((movement) => (
                                 <tr key={movement.id} className="border-t border-gray-100">
-                                    <td className="px-3 py-2 text-gray-500">{movement.created_at ? new Date(movement.created_at).toLocaleString() : '—'}</td>
+                                    <td className="px-3 py-2 text-gray-500">{dhakaDateTime(movement.created_at)}</td>
                                     <td className="px-3 py-2">{movement.product}</td>
                                     <td className="px-3 py-2"><span className="px-2 py-0.5 rounded-full text-xs font-bold bg-purple-50 text-purple-700">{movement.type}</span></td>
                                     <td className={`px-3 py-2 text-right font-bold ${movement.quantity_delta < 0 ? 'text-red-600' : 'text-green-700'}`}>{movement.quantity_delta > 0 ? '+' : ''}{movement.quantity_delta}</td>

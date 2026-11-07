@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Admin;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -25,6 +26,9 @@ class HandleInertiaRequests extends Middleware
             $translations = json_decode((string) file_get_contents($path), true) ?: [];
         }
 
+        $adminId = $request->session()->get('admin_id');
+        $admin = $adminId ? Admin::find($adminId) : null;
+
         return [
             ...parent::share($request),
             'settings' => Setting::all_(),
@@ -36,9 +40,11 @@ class HandleInertiaRequests extends Middleware
                 'done' => $request->session()->get('done'),
             ],
             'auth' => [
-                'admin' => $request->session()->get('admin_id')
-                    ? ['id' => $request->session()->get('admin_id')]
-                    : null,
+                'admin' => $admin ? [
+                    'id' => $admin->id,
+                    'username' => $admin->username,
+                    'must_change_password' => (bool) $admin->must_change_password,
+                ] : null,
             ],
         ];
     }

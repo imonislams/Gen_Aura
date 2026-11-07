@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { dhakaDate } from '../../../lib/datetime';
 
 function Customers({ customers, filters }) {
     const [q, setQ] = useState(filters?.q ?? '');
@@ -61,11 +62,7 @@ function Customers({ customers, filters }) {
                                     <td className="px-3 py-2 font-semibold">
                                         ৳{Number(customer.total_purchase).toLocaleString()}
                                     </td>
-                                    <td className="px-3 py-2 text-gray-500">
-                                        {customer.last_order_at
-                                            ? new Date(customer.last_order_at).toLocaleDateString()
-                                            : '—'}
-                                    </td>
+                                    <td className="px-3 py-2 text-gray-500">{dhakaDate(customer.last_order_at)}</td>
                                     <td className="px-3 py-2 text-right">
                                         <Link
                                             href={`/admin/customers/${customer.id}`}

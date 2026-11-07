@@ -26,7 +26,7 @@ const analyticsItems = [
 
 export default function AdminLayout({ children }) {
     const page = usePage();
-    const { settings, flash, errors } = page.props;
+    const { settings, flash, errors, auth } = page.props;
     const url = page.url || '';
 
     const logout = (event) => {
@@ -118,6 +118,11 @@ export default function AdminLayout({ children }) {
 
                 <main className="p-4 w-full max-w-6xl mx-auto">
                     <Flash ok={flash?.ok} errors={errors} />
+                    {auth?.admin?.must_change_password && (
+                        <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 mb-4 text-sm">
+                            Please change the default admin password in Settings before continuing.
+                        </div>
+                    )}
                     {children}
                 </main>
             </div>

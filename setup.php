@@ -13,7 +13,7 @@ echo "=== GEN AURA setup ===\n";
 if (!extension_loaded('pdo_mysql')) exit("PHP extension pdo_mysql is missing. In Laragon/XAMPP enable it in php.ini.\n");
 chdir(__DIR__);
 $host = ask('MySQL host', '127.0.0.1'); $port = ask('MySQL port', '3306'); $user = ask('MySQL username', 'root'); $pass = ask('MySQL password (empty if none)');
-$db = ask('Database name', 'genaura');
+$db = ask('Database name', 'gen_aura');
 $email = ask('Your email for order alerts (empty to skip)'); $mpass = $email ? ask('Gmail app password (16 digits, empty to skip)') : '';
 try {
     $pdo = new PDO("mysql:host=$host;port=$port", $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
@@ -30,5 +30,5 @@ run('php artisan key:generate --force');
 run('php artisan config:clear', false);
 run('php artisan migrate --seed --force');
 if (!run('php artisan storage:link', false)) echo "\n(storage:link failed. On Windows run the terminal as Administrator once and run: php artisan storage:link)\n";
-echo "\n=== DONE ===\nShop : http://localhost:8000\nAdmin: http://localhost:8000/admin  (admin / admin)\n";
+echo "\n=== DONE ===\nShop : http://localhost:8000\nAdmin: http://localhost:8000/admin  (admin / admin - you will be forced to change it on first login)\n";
 if (strtolower(ask('Start the server now? (y/n)', 'y')) === 'y') run('php artisan serve', false);

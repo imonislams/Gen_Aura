@@ -24,7 +24,7 @@
         <div class="muted">{{ $settings['top'] }}</div>
       </td>
       <td style="border-bottom:0" class="muted" align="right">
-        Generated {{ now()->format('d M Y, h:i A') }}
+        Generated {{ now(config('shop.timezone', 'Asia/Dhaka'))->format('d M Y, h:i A') }}
       </td>
     </tr>
   </table>

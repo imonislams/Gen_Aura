@@ -96,7 +96,7 @@ class MiscController extends Controller
         $d = $r->validate(['username' => 'required|max:40', 'current' => 'required', 'new_password' => 'required|min:6|max:100']);
         $a = Admin::find(session('admin_id'));
         if (!Hash::check($d['current'], $a->password)) return back()->withErrors('Current password is wrong');
-        $a->update(['username' => $d['username'], 'password' => $d['new_password']]);
+        $a->update(['username' => $d['username'], 'password' => $d['new_password'], 'must_change_password' => false]);
         return back()->with('ok', 'Login details updated');
     }
 }

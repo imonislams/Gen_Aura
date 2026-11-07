@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { dhakaDate } from '../../../lib/datetime';
 
 function CustomerShow({ customer }) {
     return (
@@ -12,8 +13,7 @@ function CustomerShow({ customer }) {
                 </Link>
                 <h1 className="font-serif text-3xl font-bold mt-1">{customer.name}</h1>
                 <p className="text-sm text-gray-500">
-                    {customer.phone} · customer since{' '}
-                    {customer.created_at ? new Date(customer.created_at).toLocaleDateString() : '—'}
+                    {customer.phone} · customer since {dhakaDate(customer.created_at)}
                 </p>
             </div>
 
@@ -31,9 +31,7 @@ function CustomerShow({ customer }) {
                 <div className="bg-white rounded-xl p-4">
                     <div className="text-xs text-gray-500">Last order</div>
                     <div className="text-lg font-bold">
-                        {customer.last_order_at
-                            ? new Date(customer.last_order_at).toLocaleDateString()
-                            : '—'}
+                        {dhakaDate(customer.last_order_at)}
                     </div>
                 </div>
                 <div className="bg-white rounded-xl p-4">
@@ -61,9 +59,7 @@ function CustomerShow({ customer }) {
                                 <tr key={order.id} className="border-t border-gray-100">
                                     <td className="px-2 py-2 font-semibold">{order.order_number || `#${order.id}`}</td>
                                     <td className="px-2 py-2 text-gray-500">
-                                        {order.created_at
-                                            ? new Date(order.created_at).toLocaleDateString()
-                                            : '—'}
+                                        {dhakaDate(order.created_at)}
                                     </td>
                                     <td className="px-2 py-2">{order.items_count}</td>
                                     <td className="px-2 py-2 font-semibold">

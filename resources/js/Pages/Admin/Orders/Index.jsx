@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import Pagination from '../../../Components/Pagination';
+import { dhakaDateTime } from '../../../lib/datetime';
 
 function Orders({ orders, filters, statuses }) {
     const [q, setQ] = useState(filters?.q ?? '');
@@ -59,7 +60,7 @@ function Orders({ orders, filters, statuses }) {
                             {orders.data.map((order) => (
                                 <tr key={order.id} className="border-t border-gray-100">
                                     <td className="px-3 py-2 font-semibold">{order.order_number || `#${order.id}`}</td>
-                                    <td className="px-3 py-2 text-gray-500">{order.created_at ? new Date(order.created_at).toLocaleString() : '—'}</td>
+                                    <td className="px-3 py-2 text-gray-500">{dhakaDateTime(order.created_at)}</td>
                                     <td className="px-3 py-2">
                                         <b>{order.name}</b>
                                         <div className="text-xs text-gray-500">{order.phone}</div>
