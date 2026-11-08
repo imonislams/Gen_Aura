@@ -9,7 +9,14 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        Admin::firstOrCreate(['username' => 'admin'], ['password' => 'admin', 'must_change_password' => true]);
+        Admin::firstOrCreate(
+            ['username' => env('ADMIN_EMAIL', 'admin@example.com')],
+            [
+                'name' => env('ADMIN_NAME', 'System Administrator'),
+                'password' => env('ADMIN_PASSWORD', 'password'),
+                'must_change_password' => false,
+            ]
+        );
         if (Product::count() === 0) {
             foreach ([
                 ['Classic Cotton T-Shirt', 'T-Shirt', 'Everyday Comfort', 'M,L,XL', '100% Cotton,Breathable,Soft feel,Regular fit', 'Soft, breathable cotton tee for everyday wear.', 650, 850],

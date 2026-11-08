@@ -2,9 +2,9 @@
 
 namespace App\Services\Checkout;
 
+use App\Models\DeliveryZone;
 use App\Models\Order;
 use App\Models\Product;
-use App\Models\Setting;
 use App\Services\Inventory\StockService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -35,10 +35,10 @@ class CheckoutService
         return $lines;
     }
 
-    public function totals(array $lines): array
+    public function totals(array $lines, ?int $ship = null): array
     {
         $subtotal = array_sum(array_map(fn ($line) => $line['p']->price * $line['qty'], $lines));
-        $ship = $lines ? (int) Setting::all_()['ship'] : 0;
+        $ship = $lines ? ($ship ?? 0) : 0;
 
         return ['subtotal' => $subtotal, 'ship' => $ship, 'total' => $subtotal + $ship];
     }
@@ -52,10 +52,20 @@ class CheckoutService
 
         $lines = $this->lines();
         if (!$lines) {
-            throw new RuntimeException(__('Your bag is empty.'));
+            throw new RuntimeException('Your bag is empty.');
         }
 
-        $totals = $this->totals($lines);
+        $zone = null;
+        if (!empty($customer['delivery_zone_id'])) {
+            $zone = DeliveryZone::active()->find($customer['delivery_zone_id']);
+            if (!$zone) {
+                throw new RuntimeException('Please select a valid delivery zone.');
+            }
+            $customer['delivery_area'] = $zone->name;
+        }
+        unset($customer['delivery_zone_id']);
+
+        $totals = $this->totals($lines, $zone?->charge);
 
         try {
             $order = DB::transaction(function () use ($lines, $customer, $totals, $idempotencyKey) {
@@ -66,7 +76,7 @@ class CheckoutService
                 foreach ($lines as $line) {
                     $product = Product::lockForUpdate()->find($line['p']->id);
                     if (!$product || $product->status !== 'active' || $product->stock < $line['qty']) {
-                        throw new RuntimeException(($product->name ?? 'Product') . ': ' . __('Out of stock'));
+                        throw new RuntimeException(($product->name ?? 'Product') . ': Out of stock');
                     }
 
                     $items[] = [

@@ -16,6 +16,12 @@ function Orders({ orders, filters, statuses }) {
         router.patch(`/admin/orders/${order.id}`, { status: nextStatus }, { preserveScroll: true });
     };
 
+    const cancelOrder = (order) => {
+        if (window.confirm('Cancel this order? Use this if the customer did not accept the delivery.')) {
+            updateStatus(order, 'Cancelled');
+        }
+    };
+
     return (
         <>
             <Head title="Orders" />
@@ -72,13 +78,22 @@ function Orders({ orders, filters, statuses }) {
                                     <td className="px-3 py-2 font-semibold">৳{Number(order.total).toLocaleString()}</td>
                                     <td className="px-3 py-2"><span className="px-2 py-0.5 rounded-full bg-gray-100 text-xs font-bold">{order.payment_method}</span></td>
                                     <td className="px-3 py-2">
-                                        <select className="border rounded px-2 py-1 text-xs" value={order.status} onChange={(event) => updateStatus(order, event.target.value)}>
-                                            {statuses.map((value) => <option key={value} value={value}>{value}</option>)}
-                                        </select>
+                                        {order.status === 'Delivered' ? (
+                                            <div className="flex items-center gap-2">
+                                                <span className="px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-xs font-bold">Complete</span>
+                                                <button type="button" className="text-red-500 text-xs font-bold" onClick={() => cancelOrder(order)}>
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <select className="border rounded px-2 py-1 text-xs" value={order.status} onChange={(event) => updateStatus(order, event.target.value)}>
+                                                {statuses.map((value) => <option key={value} value={value}>{value}</option>)}
+                                            </select>
+                                        )}
                                     </td>
                                     <td className="px-3 py-2 text-right whitespace-nowrap">
                                         <Link href={`/admin/orders/${order.id}`} className="text-pur text-sm font-semibold mr-2">View</Link>
-                                        <a href={`/admin/orders/${order.id}/invoice`} target="_blank" rel="noreferrer" className="text-pur text-sm font-semibold">Invoice</a>
+                                        <Link href={`/admin/orders/${order.id}/invoice`} className="text-pur text-sm font-semibold">Invoice</Link>
                                     </td>
                                 </tr>
                             ))}

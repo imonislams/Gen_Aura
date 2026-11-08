@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DeliveryZone;
 use App\Models\Product;
 use App\Services\Analytics\AnalyticsTracker;
 use App\Services\Checkout\CheckoutService;
@@ -15,7 +16,8 @@ class CartController extends Controller
     public function index(CheckoutService $checkout)
     {
         $lines = $checkout->lines();
-        $totals = $checkout->totals($lines);
+        $defaultCharge = DeliveryZone::active()->ordered()->value('charge');
+        $totals = $checkout->totals($lines, $defaultCharge !== null ? (int) $defaultCharge : null);
 
         return Inertia::render('Store/Cart', [
             'lines' => array_map(fn ($line) => [
@@ -37,8 +39,8 @@ class CartController extends Controller
 
     public function add(Request $r, Product $product)
     {
-        if ($product->status !== 'active') return back()->withErrors(__('This product is not available'));
-        if ($product->stock <= 0) return back()->withErrors(__('Out of stock'));
+        if ($product->status !== 'active') return back()->withErrors('This product is not available');
+        if ($product->stock <= 0) return back()->withErrors('Out of stock');
 
         $size = (string) $r->input('size', '');
         $qty = max(1, min(50, (int) $r->input('qty', 1)));
@@ -53,7 +55,7 @@ class CartController extends Controller
             'metadata' => ['size' => $size, 'qty' => $cart[$key]['qty'], 'price' => $product->price],
         ]);
 
-        return $r->input('go') === 'buy' ? redirect()->route('checkout.show') : back()->with('ok', __('Added to bag'));
+        return $r->input('go') === 'buy' ? redirect()->route('checkout.show') : back()->with('ok', 'Added to bag');
     }
 
     public function update(Request $r)
@@ -98,7 +100,7 @@ class CartController extends Controller
     {
         $d = $r->validate([
             'name' => 'required|max:80',
-            'phone' => ['required', 'max:20', fn ($a, $v, $f) => strlen(preg_replace('/\D/', '', $v)) < 10 ? $f(__('Please enter a valid phone number')) : null],
+            'phone' => ['required', 'max:20', fn ($a, $v, $f) => strlen(preg_replace('/\D/', '', $v)) < 10 ? $f('Please enter a valid phone number') : null],
             'address' => 'required|max:300',
         ]);
 

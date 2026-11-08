@@ -16,7 +16,6 @@ class ExampleTest extends TestCase
         Setting::put([
             'name' => 'GEN AURA',
             'cats' => 'T-Shirt',
-            'ship' => 60,
         ]);
 
         Product::create([

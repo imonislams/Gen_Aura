@@ -40,8 +40,11 @@ function OrderShow({ order, statuses }) {
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <a href={order.invoice_url} target="_blank" rel="noreferrer" className="btn bg-white border text-gray-600">
-                        Download invoice
+                    <Link href={order.invoice_url} className="btn bg-white border text-gray-600">
+                        View invoice
+                    </Link>
+                    <a href={`${order.invoice_pdf_url}?download=1`} className="btn bg-white border text-gray-600">
+                        Download
                     </a>
                     <button
                         className="btn bg-red-500"
@@ -59,7 +62,7 @@ function OrderShow({ order, statuses }) {
                         <div className="flex justify-between items-center mb-3">
                             <h2 className="font-semibold">Items</h2>
                             <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-purple-50 text-purple-700">
-                                {order.status}
+                                {order.status === 'Delivered' ? 'Complete' : order.status}
                             </span>
                         </div>
                         <div className="overflow-auto">
@@ -132,14 +135,6 @@ function OrderShow({ order, statuses }) {
                         <div className="text-sm">
                             <b>{order.name}</b>
                             <div className="text-gray-500">{order.phone}</div>
-                            {order.customer && (
-                                <Link
-                                    href={`/admin/customers/${order.customer.id}`}
-                                    className="text-pur text-sm font-semibold inline-block mt-2"
-                                >
-                                    View customer history →
-                                </Link>
-                            )}
                         </div>
                         <div className="border-t border-gray-100 mt-3 pt-3 text-sm">
                             <div className="text-xs text-gray-400">Delivery address</div>
@@ -149,30 +144,40 @@ function OrderShow({ order, statuses }) {
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-2xl shadow-sm p-4">
-                        <h2 className="font-semibold mb-2">Update status</h2>
-                        <select
-                            className="inp"
-                            value={status}
-                            onChange={(event) => setStatus(event.target.value)}
-                        >
-                            {statuses.map((value) => (
-                                <option key={value} value={value}>
-                                    {value}
-                                </option>
-                            ))}
-                        </select>
-                        <button
-                            className="btn w-full mt-3"
-                            disabled={processing || status === order.status}
-                            onClick={() => updateStatus(status)}
-                        >
-                            {processing ? 'Updating…' : 'Update status'}
-                        </button>
-                        <p className="text-xs text-gray-400 mt-2">
-                            Status changes are recorded in the order timeline. Stock rules remain unchanged in this phase.
-                        </p>
-                    </div>
+                    {order.status === 'Delivered' ? (
+                        <div className="bg-white rounded-2xl shadow-sm p-4">
+                            <h2 className="font-semibold mb-2">Order status</h2>
+                            <div className="rounded-xl bg-green-50 text-green-700 px-3 py-2 text-sm font-bold">Complete</div>
+                            <p className="text-xs text-gray-400 mt-2">
+                                This order has been delivered and is complete. If the customer did not accept the delivery, use Cancel order to reverse it.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="bg-white rounded-2xl shadow-sm p-4">
+                            <h2 className="font-semibold mb-2">Update status</h2>
+                            <select
+                                className="inp"
+                                value={status}
+                                onChange={(event) => setStatus(event.target.value)}
+                            >
+                                {statuses.map((value) => (
+                                    <option key={value} value={value}>
+                                        {value}
+                                    </option>
+                                ))}
+                            </select>
+                            <button
+                                className="btn w-full mt-3"
+                                disabled={processing || status === order.status}
+                                onClick={() => updateStatus(status)}
+                            >
+                                {processing ? 'Updating…' : 'Update status'}
+                            </button>
+                            <p className="text-xs text-gray-400 mt-2">
+                                Status changes are recorded in the order timeline. Stock rules remain unchanged in this phase.
+                            </p>
+                        </div>
+                    )}
                 </div>
             </div>
         </>

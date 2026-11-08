@@ -5,10 +5,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Admin;
 use App\Models\ContactMessage;
 use App\Models\Review;
-use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
@@ -101,49 +99,6 @@ class MiscController extends Controller
         $message->delete();
 
         return back()->with('ok', 'Message deleted');
-    }
-
-    public function settings()
-    {
-        return Inertia::render('Admin/Settings/Index', [
-            'adminUsername' => Admin::find(session('admin_id'))?->username,
-        ]);
-    }
-
-    public function settingsSave(Request $r)
-    {
-        $d = $r->validate([
-            'name' => 'required|max:60', 'ar' => 'nullable|max:60', 'top' => 'nullable|max:120',
-            'title' => 'nullable|max:120', 'sub' => 'nullable|max:300',
-            'wa' => 'nullable|max:20', 'phone' => 'nullable|max:30', 'email' => 'nullable|email|max:120', 'address' => 'nullable|max:255',
-            'ship' => 'required|integer|min:0', 'cats' => 'required|max:200',
-            'fb' => 'nullable|max:255', 'instagram' => 'nullable|max:255', 'youtube' => 'nullable|max:255',
-            'currency' => 'nullable|max:10', 'order_prefix' => 'nullable|max:10',
-            'cod_enabled' => 'nullable|in:0,1', 'stock_display' => 'nullable|in:0,1',
-            'promo_title' => 'nullable|max:120', 'promo_text' => 'nullable|max:300',
-            'why_choose_us' => 'nullable|max:300',
-            'about_title' => 'nullable|max:120', 'about_body' => 'nullable|max:2000',
-            'hero_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
-            'logo' => 'nullable|file|mimes:jpg,jpeg,png,webp,svg|max:4096',
-            'favicon' => 'nullable|file|mimes:ico,png,jpg,jpeg,webp,svg|max:1024',
-            'about_image' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:4096',
-        ]);
-
-        foreach (['hero_image' => 'hero', 'logo' => 'brand', 'favicon' => 'brand', 'about_image' => 'about'] as $field => $dir) {
-            unset($d[$field]);
-
-            if ($r->hasFile($field)) {
-                $old = Setting::all_()[$field] ?? '';
-                if ($old && str_starts_with($old, $dir . '/')) {
-                    Storage::disk('public')->delete($old);
-                }
-                $d[$field] = $r->file($field)->store($dir, 'public');
-            }
-        }
-
-        Setting::put($d);
-
-        return back()->with('ok', 'Settings saved');
     }
 
     public function password(Request $r)

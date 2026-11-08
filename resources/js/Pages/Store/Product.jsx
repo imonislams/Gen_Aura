@@ -1,12 +1,10 @@
-import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import StoreLayout from '../../Layouts/StoreLayout';
 import ProductCard from '../../Components/ProductCard';
+import StarRating from '../../Components/StarRating';
 
 function Product({ product, related, reviews }) {
-    const { translations } = usePage().props;
-    const t = (value) => translations?.[value] ?? value;
-
     const [image, setImage] = useState(product.image_url);
     const [size, setSize] = useState(product.sizes?.[0] ?? '');
     const [qty, setQty] = useState(1);
@@ -56,7 +54,7 @@ function Product({ product, related, reviews }) {
 
             <section className="max-w-6xl mx-auto px-4 py-8">
                 <Link href="/shop" className="text-sm text-pur font-semibold">
-                    ← {t('← Back to shop')}
+                    ← Back to shop
                 </Link>
 
                 <div className="grid md:grid-cols-2 gap-8 mt-4">
@@ -76,7 +74,7 @@ function Product({ product, related, reviews }) {
                     <div>
                         <div className="flex gap-2 flex-wrap mb-2">
                             <span className="inline-block text-xs font-bold bg-white border border-gold text-gold rounded-full px-3 py-1">{product.cat}</span>
-                            <span className="inline-block text-xs font-bold bg-white border rounded-full px-3 py-1">🚚 {t('COD · All Bangladesh')}</span>
+                            <span className="inline-block text-xs font-bold bg-white border rounded-full px-3 py-1">🚚 COD · All Bangladesh</span>
                         </div>
                         <h1 className="font-serif text-4xl md:text-5xl font-bold mt-3">{product.name}</h1>
                         {product.sub && <p className="font-serif italic text-3xl gtext">{product.sub}</p>}
@@ -100,12 +98,12 @@ function Product({ product, related, reviews }) {
                         </div>
 
                         {out ? (
-                            <p className="w-full text-center rounded-xl py-3 font-semibold bg-gray-200 text-gray-500">{t('Out of stock')}</p>
+                            <p className="w-full text-center rounded-xl py-3 font-semibold bg-gray-200 text-gray-500">Out of stock</p>
                         ) : (
                             <>
                                 {product.sizes.length > 0 && (
                                     <div className="mb-4">
-                                        <div className="text-sm font-semibold mb-1">{t('Size')}</div>
+                                        <div className="text-sm font-semibold mb-1">Size</div>
                                         <div className="flex gap-2 flex-wrap">
                                             {product.sizes.map((option) => (
                                                 <button
@@ -128,25 +126,25 @@ function Product({ product, related, reviews }) {
                                         <span className="w-8 text-center">{qty}</span>
                                         <button type="button" className="w-8 h-8 rounded-full border" disabled={qty >= maxQty} onClick={() => setQty(Math.min(maxQty, qty + 1))}>+</button>
                                     </div>
-                                    {product.stock <= 5 && <span className="text-sm text-mag font-semibold">{product.stock} {t('left')}</span>}
+                                    {product.stock <= 5 && <span className="text-sm text-mag font-semibold">{product.stock} left</span>}
                                 </div>
 
                                 <button type="button" onClick={() => add('bag')} className="w-full border border-gray-400 rounded-xl py-3 font-semibold bg-white">
-                                    👉 {t('Add to bag')}
+                                    👉 Add to bag
                                 </button>
                                 <button type="button" onClick={() => add('buy')} className="w-full mt-3 rounded-xl py-3 font-semibold bg-black text-white">
-                                    {t('Buy it now')}
+                                    Buy it now
                                 </button>
                             </>
                         )}
 
                         <details className="border-t mt-6">
-                            <summary className="py-4 font-semibold cursor-pointer">🚚 {t('Shipping')}</summary>
-                            <p className="pb-4 text-gray-600 text-sm">{t('Delivery within 3 days all over Bangladesh. Delivery charge:')} ৳60</p>
+                            <summary className="py-4 font-semibold cursor-pointer">🚚 Shipping</summary>
+                            <p className="pb-4 text-gray-600 text-sm">Delivery within 3 days all over Bangladesh. The charge depends on your delivery area and is shown at checkout.</p>
                         </details>
                         <details className="border-t border-b">
-                            <summary className="py-4 font-semibold cursor-pointer">↩️ {t('Return & Refund Policy')}</summary>
-                            <p className="pb-4 text-gray-600 text-sm">{t('If you receive a damaged or wrong item, contact us within 3 days of delivery for a replacement or refund.')}</p>
+                            <summary className="py-4 font-semibold cursor-pointer">↩️ Return &amp; Refund Policy</summary>
+                            <p className="pb-4 text-gray-600 text-sm">If you receive a damaged or wrong item, contact us within 3 days of delivery for a replacement or refund.</p>
                         </details>
                     </div>
                 </div>
@@ -155,7 +153,7 @@ function Product({ product, related, reviews }) {
                     <div className="mt-10">
                         <h2 className="font-serif text-3xl mb-4">Related products</h2>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {related.map((item) => <ProductCard key={item.id} product={item} t={t} />)}
+                            {related.map((item) => <ProductCard key={item.id} product={item} />)}
                         </div>
                     </div>
                 )}
@@ -179,14 +177,15 @@ function Product({ product, related, reviews }) {
                     <form onSubmit={submitReview} className="border-t border-gray-100 pt-4">
                         <h3 className="font-semibold mb-2">Write a review</h3>
                         <div className="grid md:grid-cols-2 gap-3">
-                            <input className="inp" value={reviewForm.data.name} onChange={(event) => reviewForm.setData('name', event.target.value)} placeholder={t('Your name')} />
-                            <select className="inp" value={reviewForm.data.stars} onChange={(event) => reviewForm.setData('stars', Number(event.target.value))}>
-                                {[5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{'★'.repeat(n)}</option>)}
-                            </select>
+                            <input className="inp" value={reviewForm.data.name} onChange={(event) => reviewForm.setData('name', event.target.value)} placeholder="Your name" />
+                            <div className="inp flex items-center justify-between gap-2">
+                                <span className="text-sm font-semibold">Rating</span>
+                                <StarRating value={reviewForm.data.stars} onChange={(stars) => reviewForm.setData('stars', stars)} />
+                            </div>
                         </div>
-                        <textarea className="inp mt-3" rows="3" value={reviewForm.data.text} onChange={(event) => reviewForm.setData('text', event.target.value)} placeholder={t('Your review')} required />
+                        <textarea className="inp mt-3" rows="3" value={reviewForm.data.text} onChange={(event) => reviewForm.setData('text', event.target.value)} placeholder="Your review" required />
                         {reviewForm.errors.text && <div className="text-xs text-red-600">{reviewForm.errors.text}</div>}
-                        <button className="btn mt-3" disabled={reviewForm.processing}>{t('Submit review')}</button>
+                        <button className="btn mt-3" disabled={reviewForm.processing}>Submit review</button>
                         <div className="text-xs text-gray-400 mt-2">Reviews appear after approval.</div>
                     </form>
                 </div>

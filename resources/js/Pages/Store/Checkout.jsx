@@ -2,12 +2,12 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { useEffect } from 'react';
 import StoreLayout from '../../Layouts/StoreLayout';
 
-function Checkout({ lines, subtotal, ship, total, checkoutToken }) {
+function Checkout({ lines, subtotal, ship, total, zones, checkoutToken }) {
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         phone: '',
         address: '',
-        delivery_area: 'Inside Dhaka',
+        delivery_zone_id: zones?.length ? zones[0].id : '',
         note: '',
         checkout_token: checkoutToken,
     });
@@ -15,6 +15,10 @@ function Checkout({ lines, subtotal, ship, total, checkoutToken }) {
     useEffect(() => {
         setData('checkout_token', checkoutToken);
     }, [checkoutToken]);
+
+    const selectedZone = (zones ?? []).find((zone) => String(zone.id) === String(data.delivery_zone_id));
+    const shipAmount = selectedZone ? Number(selectedZone.charge) : Number(ship);
+    const grandTotal = Number(subtotal) + shipAmount;
 
     const submit = (event) => {
         event.preventDefault();
@@ -82,14 +86,22 @@ function Checkout({ lines, subtotal, ship, total, checkoutToken }) {
 
                         <label className="block text-sm mb-3">
                             Delivery area
-                            <select
-                                className="inp"
-                                value={data.delivery_area}
-                                onChange={(event) => setData('delivery_area', event.target.value)}
-                            >
-                                <option>Inside Dhaka</option>
-                                <option>Outside Dhaka</option>
-                            </select>
+                            {zones?.length ? (
+                                <select
+                                    className="inp"
+                                    value={data.delivery_zone_id}
+                                    onChange={(event) => setData('delivery_zone_id', event.target.value)}
+                                >
+                                    {zones.map((zone) => (
+                                        <option key={zone.id} value={zone.id}>
+                                            {zone.name} · ৳{Number(zone.charge).toLocaleString()}
+                                        </option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <div className="inp bg-gray-50 text-gray-500">Delivery charge ৳{Number(ship).toLocaleString()}</div>
+                            )}
+                            {errors.delivery_zone_id && <span className="text-xs text-red-600">{errors.delivery_zone_id}</span>}
                         </label>
 
                         <label className="block text-sm mb-3">
@@ -124,7 +136,7 @@ function Checkout({ lines, subtotal, ship, total, checkoutToken }) {
                         </div>
 
                         <button className="btn w-full" disabled={processing}>
-                            {processing ? 'Placing order…' : `Place order · ৳${Number(total).toLocaleString()}`}
+                            {processing ? 'Placing order…' : `Place order · ৳${Number(grandTotal).toLocaleString()}`}
                         </button>
                         <p className="text-xs text-gray-400 text-center mt-2">
                             Submit is disabled while processing to prevent duplicates.
@@ -149,11 +161,11 @@ function Checkout({ lines, subtotal, ship, total, checkoutToken }) {
                         </div>
                         <div className="flex justify-between py-1 text-sm">
                             <span>Delivery</span>
-                            <b>৳{Number(ship).toLocaleString()}</b>
+                            <b>৳{Number(shipAmount).toLocaleString()}</b>
                         </div>
                         <div className="flex justify-between pt-3 mt-2 border-t border-gray-100 font-bold text-base">
                             <span>Grand total</span>
-                            <span>৳{Number(total).toLocaleString()}</span>
+                            <span>৳{Number(grandTotal).toLocaleString()}</span>
                         </div>
                     </div>
                 </div>

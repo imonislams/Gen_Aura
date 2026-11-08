@@ -153,7 +153,7 @@ class ShopController extends Controller
         $d['name'] = $d['name'] ?: 'Customer';
         $d['status'] = 'pending';
         Review::create($d);
-        return back()->with('ok', __('Thank you! Your review will appear after approval.'));
+        return back()->with('ok', 'Thank you! Your review will appear after approval.');
     }
 
     public function contact() { return Inertia::render('Store/Contact'); }
@@ -161,12 +161,12 @@ class ShopController extends Controller
     public function storeContact(Request $r)
     {
         if ($r->filled('website')) {
-            return back()->with('ok', __('Thank you! We will contact you soon.'));
+            return back()->with('ok', 'Thank you! We will contact you soon.');
         }
 
         $d = $r->validate([
             'name' => 'required|max:80',
-            'phone' => ['required', 'max:20', fn ($a, $v, $f) => strlen(preg_replace('/\D/', '', $v)) < 10 ? $f(__('Please enter a valid phone number')) : null],
+            'phone' => ['required', 'max:20', fn ($a, $v, $f) => strlen(preg_replace('/\D/', '', $v)) < 10 ? $f('Please enter a valid phone number') : null],
             'email' => 'nullable|email|max:120',
             'subject' => 'nullable|max:150',
             'message' => 'required|max:2000',
@@ -187,14 +187,8 @@ class ShopController extends Controller
             }
         }
 
-        return back()->with('ok', __('Thank you! We will contact you soon.'));
+        return back()->with('ok', 'Thank you! We will contact you soon.');
     }
 
     public function about() { return Inertia::render('Store/About'); }
-
-    public function lang(string $l)
-    {
-        if (in_array($l, ['en', 'bn'])) session(['lang' => $l]);
-        return back();
-    }
 }

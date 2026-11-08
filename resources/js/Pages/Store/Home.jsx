@@ -3,8 +3,7 @@ import StoreLayout from '../../Layouts/StoreLayout';
 import ProductCard from '../../Components/ProductCard';
 
 function Home({ products, featuredCategories, featuredProducts, bestSellers, reviews, heroImage, heroProduct }) {
-    const { settings, translations } = usePage().props;
-    const t = (value) => translations?.[value] ?? value;
+    const { settings } = usePage().props;
     const why = (settings.why_choose_us || '').split('|').map((item) => item.trim()).filter(Boolean);
 
     return (
@@ -24,10 +23,10 @@ function Home({ products, featuredCategories, featuredProducts, bestSellers, rev
                             <p className="mt-4 text-white/85 max-w-md">{settings.sub}</p>
                             <div className="mt-6 flex flex-wrap gap-3">
                                 <Link href="/shop" className="bg-white text-mag font-semibold rounded-full px-6 py-3 hover:bg-white/90 transition">
-                                    {t('Shop now')}
+                                    Shop now
                                 </Link>
                                 <Link href="/reviews" className="border border-white/60 rounded-full px-6 py-3 font-semibold hover:bg-white/10 transition">
-                                    {t('Reviews')}
+                                    Reviews
                                 </Link>
                             </div>
                         </div>
@@ -63,7 +62,7 @@ function Home({ products, featuredCategories, featuredProducts, bestSellers, rev
                 <section className="max-w-6xl mx-auto px-4 py-4">
                     <h2 className="font-serif text-3xl mb-4">Featured products</h2>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {featuredProducts.map((product) => <ProductCard key={product.id} product={product} t={t} />)}
+                        {featuredProducts.map((product) => <ProductCard key={product.id} product={product} />)}
                     </div>
                 </section>
             )}
@@ -74,20 +73,20 @@ function Home({ products, featuredCategories, featuredProducts, bestSellers, rev
                         {settings.promo_title && <h2 className="font-serif text-3xl font-bold">{settings.promo_title}</h2>}
                         {settings.promo_text && <p className="mt-2 text-white/85">{settings.promo_text}</p>}
                         <Link href="/shop" className="inline-block mt-4 bg-white text-mag font-semibold rounded-full px-6 py-3">
-                            {t('Shop now')}
+                            Shop now
                         </Link>
                     </div>
                 </section>
             )}
 
             <section className="max-w-6xl mx-auto px-4 py-8">
-                <h2 className="font-serif text-3xl mb-4">{t('New arrivals')}</h2>
+                <h2 className="font-serif text-3xl mb-4">New arrivals</h2>
                 {products.length > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {products.map((product) => <ProductCard key={product.id} product={product} t={t} />)}
+                        {products.map((product) => <ProductCard key={product.id} product={product} />)}
                     </div>
                 ) : (
-                    <p className="text-gray-500">{t('No products yet.')}</p>
+                    <p className="text-gray-500">No products yet.</p>
                 )}
             </section>
 
@@ -95,14 +94,14 @@ function Home({ products, featuredCategories, featuredProducts, bestSellers, rev
                 <section className="max-w-6xl mx-auto px-4 py-4">
                     <h2 className="font-serif text-3xl mb-4">Best selling</h2>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {bestSellers.map((product) => <ProductCard key={product.id} product={product} t={t} />)}
+                        {bestSellers.map((product) => <ProductCard key={product.id} product={product} />)}
                     </div>
                 </section>
             )}
 
             {why.length > 0 && (
                 <section className="max-w-6xl mx-auto px-4 py-6">
-                    <h2 className="font-serif text-3xl mb-4">{t('Why choose us')}</h2>
+                    <h2 className="font-serif text-3xl mb-4">Why choose us</h2>
                     <div className="grid md:grid-cols-3 gap-4">
                         {why.map((item, index) => (
                             <div key={index} className="bg-white rounded-2xl p-5 text-center shadow-sm">
@@ -117,8 +116,8 @@ function Home({ products, featuredCategories, featuredProducts, bestSellers, rev
             {reviews.length > 0 && (
                 <section className="max-w-6xl mx-auto px-4 py-8">
                     <h2 className="font-serif text-3xl mb-4">
-                        {t('Customers are saying')}{' '}
-                        <Link href="/reviews" className="text-sm text-pur font-semibold">{t('All reviews')}</Link>
+                        Customers are saying{' '}
+                        <Link href="/reviews" className="text-sm text-pur font-semibold">All reviews</Link>
                     </h2>
                     <div className="grid md:grid-cols-3 gap-4">
                         {reviews.map((review) => (

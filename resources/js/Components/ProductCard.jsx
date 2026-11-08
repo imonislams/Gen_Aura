@@ -1,7 +1,7 @@
 import { Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 
-export default function ProductCard({ product, t = (value) => value }) {
+export default function ProductCard({ product }) {
     const out = product.stock <= 0;
     const [busy, setBusy] = useState(false);
 
@@ -36,12 +36,12 @@ export default function ProductCard({ product, t = (value) => value }) {
                 )}
                 {out ? (
                     <span className="absolute top-2 right-2 bg-black text-white text-xs font-bold rounded-full px-2 py-1">
-                        {t('Out of stock')}
+                        Out of stock
                     </span>
                 ) : (
                     product.stock <= 5 && (
                         <span className="absolute bottom-2 left-2 bg-white/90 text-mag text-xs font-bold rounded-full px-2 py-1">
-                            {product.stock} {t('left')}
+                            {product.stock} left
                         </span>
                     )
                 )}
@@ -68,7 +68,7 @@ export default function ProductCard({ product, t = (value) => value }) {
                             disabled={out || busy}
                             onClick={() => add('bag')}
                         >
-                            {t('Add to bag')}
+                            Add to bag
                         </button>
                         <button
                             type="button"
@@ -76,7 +76,7 @@ export default function ProductCard({ product, t = (value) => value }) {
                             disabled={out || busy}
                             onClick={() => add('buy')}
                         >
-                            {t('Buy it now')}
+                            Buy it now
                         </button>
                     </div>
                 </div>

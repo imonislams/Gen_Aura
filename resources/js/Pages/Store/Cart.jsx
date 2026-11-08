@@ -1,10 +1,7 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import StoreLayout from '../../Layouts/StoreLayout';
 
 function Cart({ lines, subtotal, ship, total }) {
-    const { translations } = usePage().props;
-    const t = (value) => translations?.[value] ?? value;
-
     const update = (line, qty) => {
         router.post('/cart/update', { key: line.key, qty }, { preserveScroll: true });
     };
@@ -18,8 +15,8 @@ function Cart({ lines, subtotal, ship, total }) {
             <>
                 <Head title="Cart" />
                 <div className="text-center p-16 text-gray-500">
-                    {t('Your bag is empty.')}{' '}
-                    <Link href="/shop" className="text-pur font-semibold">{t('Browse the shop')}</Link>
+                    Your bag is empty.{' '}
+                    <Link href="/shop" className="text-pur font-semibold">Browse the shop</Link>
                 </div>
             </>
         );
@@ -46,20 +43,20 @@ function Cart({ lines, subtotal, ship, total }) {
                                     <span>{line.qty}</span>
                                     <button className="w-7 h-7 rounded-full border" disabled={line.qty >= 50} onClick={() => update(line, line.qty + 1)}>+</button>
                                 </div>
-                                <button className="text-xs text-red-500" onClick={() => remove(line)}>{t('Remove')}</button>
+                                <button className="text-xs text-red-500" onClick={() => remove(line)}>Remove</button>
                             </div>
                         </div>
                     ))}
-                    <Link href="/shop" className="inline-block text-sm text-pur font-semibold">← {t('Continue shopping')}</Link>
+                    <Link href="/shop" className="inline-block text-sm text-pur font-semibold">← Continue shopping</Link>
                 </div>
 
                 <div className="bg-white rounded-2xl p-5">
-                    <h3 className="font-semibold mb-3">{t('Order summary')}</h3>
-                    <div className="text-sm flex justify-between py-1"><span>{t('Subtotal')}</span><span>৳{Number(subtotal).toLocaleString()}</span></div>
-                    <div className="text-sm flex justify-between py-1"><span>{t('Delivery')}</span><span>৳{Number(ship).toLocaleString()}</span></div>
-                    <div className="font-bold flex justify-between text-lg border-t mt-2 pt-3"><span>{t('Total')}</span><span>৳{Number(total).toLocaleString()}</span></div>
-                    <Link href="/checkout" className="btn w-full mt-4">{t('Proceed to checkout')}</Link>
-                    <p className="text-xs text-gray-400 text-center mt-2">{t('Cash on Delivery · totals re-verified on the server')}</p>
+                    <h3 className="font-semibold mb-3">Order summary</h3>
+                    <div className="text-sm flex justify-between py-1"><span>Subtotal</span><span>৳{Number(subtotal).toLocaleString()}</span></div>
+                    <div className="text-sm flex justify-between py-1"><span>Delivery</span><span>৳{Number(ship).toLocaleString()}</span></div>
+                    <div className="font-bold flex justify-between text-lg border-t mt-2 pt-3"><span>Total</span><span>৳{Number(total).toLocaleString()}</span></div>
+                    <Link href="/checkout" className="btn w-full mt-4">Proceed to checkout</Link>
+                    <p className="text-xs text-gray-400 text-center mt-2">Cash on Delivery · totals re-verified on the server</p>
                 </div>
             </div>
         </>

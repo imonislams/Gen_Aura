@@ -52,6 +52,20 @@ class OrderController extends Controller
         ]);
     }
 
+    public function notifications()
+    {
+        $latest = Order::latest('id')->first(['id', 'order_number', 'created_at']);
+
+        return response()->json([
+            'pending' => Order::where('status', 'Pending')->count(),
+            'latest' => $latest ? [
+                'id' => $latest->id,
+                'order_number' => $latest->order_number,
+                'created_at' => $latest->created_at?->toIso8601String(),
+            ] : null,
+        ]);
+    }
+
     public function show(Order $order)
     {
         $order->load(['items', 'customer', 'statusHistory']);
@@ -92,6 +106,7 @@ class OrderController extends Controller
                     'created_at' => $history->created_at?->toIso8601String(),
                 ])->values(),
                 'invoice_url' => route('admin.orders.invoice', $order),
+                'invoice_pdf_url' => route('admin.orders.invoice.pdf', $order),
             ],
             'statuses' => Order::STATUS,
         ]);
@@ -100,16 +115,57 @@ class OrderController extends Controller
     public function invoice(Order $order)
     {
         $order->load('items');
+
+        return Inertia::render('Admin/Orders/Invoice', [
+            'order' => [
+                'id' => $order->id,
+                'order_number' => $order->order_number,
+                'name' => $order->name,
+                'phone' => $order->phone,
+                'address' => $order->address,
+                'delivery_area' => $order->delivery_area,
+                'note' => $order->note,
+                'subtotal' => $order->subtotal,
+                'ship' => $order->ship,
+                'total' => $order->total,
+                'payment_method' => $order->payment_method,
+                'created_at' => $order->created_at?->toIso8601String(),
+                'items' => $order->items->map(fn ($item) => [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'size' => $item->size,
+                    'qty' => $item->qty,
+                    'price' => $item->price,
+                    'line_total' => $item->price * $item->qty,
+                ])->values(),
+            ],
+            'back_url' => route('admin.orders.show', $order),
+            'pdf_url' => route('admin.orders.invoice.pdf', $order),
+        ]);
+    }
+
+    public function invoicePdf(Request $r, Order $order)
+    {
+        $order->load('items');
         $settings = Setting::all_();
 
         $pdf = Pdf::loadView('exports.invoice', compact('order', 'settings'));
+        $filename = 'invoice-' . ($order->order_number ?: $order->id) . '.pdf';
 
-        return $pdf->download('invoice-' . ($order->order_number ?: $order->id) . '.pdf');
+        if ($r->boolean('download')) {
+            return $pdf->download($filename);
+        }
+
+        return $pdf->stream($filename, ['Attachment' => false]);
     }
 
     public function update(Request $r, Order $order)
     {
         $st = $r->validate(['status' => ['required', Rule::in(Order::STATUS)]])['status'];
+
+        if ($order->status === 'Delivered' && !in_array($st, ['Delivered', 'Cancelled'], true)) {
+            return back()->withErrors('Delivered orders are complete. They can only be cancelled if the customer did not accept the delivery.');
+        }
 
         try {
             DB::transaction(function () use ($order, $st) {

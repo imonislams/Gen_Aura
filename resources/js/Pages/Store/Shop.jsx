@@ -1,12 +1,10 @@
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import StoreLayout from '../../Layouts/StoreLayout';
 import ProductCard from '../../Components/ProductCard';
 import Pagination from '../../Components/Pagination';
 
 function Shop({ products, filters, categories }) {
-    const { translations } = usePage().props;
-    const t = (value) => translations?.[value] ?? value;
     const currentFilters = filters && !Array.isArray(filters) ? filters : {};
 
     const [cat, setCat] = useState(currentFilters.cat ?? '');
@@ -43,14 +41,14 @@ function Shop({ products, filters, categories }) {
             <Head title="Shop" />
 
             <section className="max-w-6xl mx-auto px-4 py-8">
-                <h1 className="font-serif text-3xl mb-4">{t('All products')}</h1>
+                <h1 className="font-serif text-3xl mb-4">All products</h1>
 
                 <div className="flex gap-2 flex-wrap mb-4">
                     <button
                         className={`px-4 py-1.5 rounded-full text-sm font-semibold ${cat ? 'bg-white border' : 'grad text-white'}`}
                         onClick={() => chooseCategory('')}
                     >
-                        {t('All')}
+                        All
                     </button>
                     {categories.map((category) => (
                         <button
@@ -70,44 +68,44 @@ function Shop({ products, filters, categories }) {
                         value={q}
                         onChange={(event) => setQ(event.target.value)}
                         onKeyDown={(event) => event.key === 'Enter' && apply()}
-                        placeholder={t('Search products')}
+                        placeholder="Search products"
                     />
                     <input
                         type="number"
                         className="inp !mt-0"
                         value={min}
                         onChange={(event) => setMin(event.target.value)}
-                        placeholder={t('Min ৳')}
+                        placeholder="Min ৳"
                     />
                     <input
                         type="number"
                         className="inp !mt-0"
                         value={max}
                         onChange={(event) => setMax(event.target.value)}
-                        placeholder={t('Max ৳')}
+                        placeholder="Max ৳"
                     />
                     <select className="inp !mt-0" value={sort} onChange={(event) => { setSort(event.target.value); apply({ sort: event.target.value }); }}>
-                        <option value="new">{t('Newest')}</option>
-                        <option value="low">{t('Price: Low to High')}</option>
-                        <option value="high">{t('Price: High to Low')}</option>
+                        <option value="new">Newest</option>
+                        <option value="low">Price: Low to High</option>
+                        <option value="high">Price: High to Low</option>
                     </select>
                     <label className="text-sm flex items-center gap-2 col-span-2">
                         <input type="checkbox" checked={stock} onChange={(event) => { setStock(event.target.checked); apply({ stock: event.target.checked ? 1 : undefined }); }} />
-                        {t('In stock only')}
+                        In stock only
                     </label>
                     <button className="btn col-span-2" onClick={() => apply()}>
-                        {t('Apply filters')}
+                        Apply filters
                     </button>
                 </div>
 
                 {products.data.length > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {products.data.map((product) => (
-                            <ProductCard key={product.id} product={product} t={t} />
+                            <ProductCard key={product.id} product={product} />
                         ))}
                     </div>
                 ) : (
-                    <p className="text-gray-500">{t('No products found.')}</p>
+                    <p className="text-gray-500">No products found.</p>
                 )}
 
                 <Pagination paginator={products} />

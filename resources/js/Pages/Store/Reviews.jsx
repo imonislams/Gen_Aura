@@ -1,10 +1,8 @@
-import { Head, useForm, usePage } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import StoreLayout from '../../Layouts/StoreLayout';
+import StarRating from '../../Components/StarRating';
 
 function Reviews({ reviews, avg, count }) {
-    const { translations } = usePage().props;
-    const t = (value) => translations?.[value] ?? value;
-
     const form = useForm({ name: '', text: '', stars: 5 });
 
     const submit = (event) => {
@@ -20,20 +18,21 @@ function Reviews({ reviews, avg, count }) {
             <Head title="Reviews" />
 
             <section className="max-w-4xl mx-auto px-4 py-8">
-                <h1 className="font-serif text-3xl">{t('Customers are saying')}</h1>
+                <h1 className="font-serif text-3xl">Customers are saying</h1>
                 <p className="text-org font-semibold mb-4">{avg} ★ ({count})</p>
 
                 <form onSubmit={submit} className="bg-white rounded-2xl p-5 mb-6">
-                    <h2 className="font-semibold mb-2">{t('Write a review')}</h2>
+                    <h2 className="font-semibold mb-2">Write a review</h2>
                     <div className="grid md:grid-cols-2 gap-3">
-                        <input className="inp" value={form.data.name} onChange={(event) => form.setData('name', event.target.value)} placeholder={t('Your name')} />
-                        <select className="inp" value={form.data.stars} onChange={(event) => form.setData('stars', Number(event.target.value))}>
-                            {[5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{'★'.repeat(n)}</option>)}
-                        </select>
+                        <input className="inp" value={form.data.name} onChange={(event) => form.setData('name', event.target.value)} placeholder="Your name" />
+                        <div className="inp flex items-center justify-between gap-2">
+                            <span className="text-sm font-semibold">Rating</span>
+                            <StarRating value={form.data.stars} onChange={(stars) => form.setData('stars', stars)} />
+                        </div>
                     </div>
-                    <textarea className="inp mt-3" rows="3" value={form.data.text} onChange={(event) => form.setData('text', event.target.value)} placeholder={t('Your review')} required />
+                    <textarea className="inp mt-3" rows="3" value={form.data.text} onChange={(event) => form.setData('text', event.target.value)} placeholder="Your review" required />
                     {form.errors.text && <div className="text-xs text-red-600">{form.errors.text}</div>}
-                    <button className="btn mt-3" disabled={form.processing}>{t('Submit review')}</button>
+                    <button className="btn mt-3" disabled={form.processing}>Submit review</button>
                     <div className="text-xs text-gray-400 mt-2">Reviews appear after approval.</div>
                 </form>
 

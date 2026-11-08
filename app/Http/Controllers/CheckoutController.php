@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DeliveryZone;
 use App\Models\Order;
 use App\Services\Analytics\AnalyticsTracker;
 use App\Services\Checkout\CheckoutService;
@@ -16,7 +17,10 @@ class CheckoutController extends Controller
     public function show(Request $request, CheckoutService $checkout)
     {
         $lines = $checkout->lines();
-        $totals = $checkout->totals($lines);
+        $zones = DeliveryZone::active()->ordered()->get()
+            ->map(fn (DeliveryZone $zone) => ['id' => $zone->id, 'name' => $zone->name, 'charge' => $zone->charge])
+            ->values();
+        $totals = $checkout->totals($lines, $zones->first()['charge'] ?? null);
 
         $token = session('checkout_token') ?: (string) Str::uuid();
         session(['checkout_token' => $token]);
@@ -39,6 +43,7 @@ class CheckoutController extends Controller
             'subtotal' => $totals['subtotal'],
             'ship' => $totals['ship'],
             'total' => $totals['total'],
+            'zones' => $zones,
             'checkoutToken' => $token,
         ]);
     }
@@ -47,15 +52,16 @@ class CheckoutController extends Controller
     {
         $data = $request->validate([
             'name' => 'required|max:80',
-            'phone' => ['required', 'max:20', fn ($attribute, $value, $fail) => strlen(preg_replace('/\D/', '', $value)) < 10 ? $fail(__('Please enter a valid phone number')) : null],
+            'phone' => ['required', 'max:20', fn ($attribute, $value, $fail) => strlen(preg_replace('/\D/', '', $value)) < 10 ? $fail('Please enter a valid phone number') : null],
             'address' => 'required|max:300',
             'delivery_area' => 'nullable|max:80',
+            'delivery_zone_id' => 'nullable|integer|exists:delivery_zones,id',
             'note' => 'nullable|max:300',
             'checkout_token' => 'required|string',
         ]);
 
         if (!hash_equals((string) session('checkout_token'), (string) $data['checkout_token'])) {
-            return back()->withErrors(__('This checkout session expired. Please review your bag and try again.'));
+            return back()->withErrors('This checkout session expired. Please review your bag and try again.');
         }
 
         try {
@@ -64,6 +70,7 @@ class CheckoutController extends Controller
                 'phone' => $data['phone'],
                 'address' => $data['address'],
                 'delivery_area' => $data['delivery_area'] ?? null,
+                'delivery_zone_id' => $data['delivery_zone_id'] ?? null,
                 'note' => $data['note'] ?? null,
             ], $data['checkout_token']);
         } catch (RuntimeException $e) {

@@ -1,9 +1,9 @@
 import { Head, usePage } from '@inertiajs/react';
 import StoreLayout from '../../Layouts/StoreLayout';
+import { SocialLinks } from '../../Components/SocialIcons';
 
 function About() {
-    const { settings, translations } = usePage().props;
-    const t = (value) => translations?.[value] ?? value;
+    const { settings } = usePage().props;
     const why = (settings.why_choose_us || '').split('|').map((item) => item.trim()).filter(Boolean);
 
     return (
@@ -15,11 +15,7 @@ function About() {
                     <div>
                         <h1 className="font-serif text-4xl md:text-5xl font-bold">{settings.about_title}</h1>
                         <p className="mt-4 text-gray-600 whitespace-pre-line">{settings.about_body}</p>
-                        <div className="flex gap-3 flex-wrap mt-5">
-                            {settings.fb && <a href={settings.fb} target="_blank" rel="noreferrer" className="px-4 py-2 rounded-full border font-semibold">Facebook</a>}
-                            {settings.instagram && <a href={settings.instagram} target="_blank" rel="noreferrer" className="px-4 py-2 rounded-full border font-semibold">Instagram</a>}
-                            {settings.youtube && <a href={settings.youtube} target="_blank" rel="noreferrer" className="px-4 py-2 rounded-full border font-semibold">YouTube</a>}
-                        </div>
+                        <SocialLinks settings={settings} className="mt-5" />
                     </div>
                     <div>
                         {settings.about_image ? (
@@ -42,8 +38,8 @@ function About() {
                 )}
 
                 <div className="bg-white rounded-2xl p-6 grid md:grid-cols-3 gap-4 text-sm mt-8">
-                    <div><div className="text-xs text-gray-400 uppercase">{t('Phone')}</div><div>{settings.phone || '—'}</div></div>
-                    <div><div className="text-xs text-gray-400 uppercase">{t('Email')}</div><div>{settings.email || '—'}</div></div>
+                    <div><div className="text-xs text-gray-400 uppercase">Phone</div><div>{settings.phone || '—'}</div></div>
+                    <div><div className="text-xs text-gray-400 uppercase">Email</div><div>{settings.email || '—'}</div></div>
                     <div><div className="text-xs text-gray-400 uppercase">Address</div><div>{settings.address || '—'}</div></div>
                 </div>
             </section>
