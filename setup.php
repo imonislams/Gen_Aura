@@ -30,5 +30,5 @@ run('php artisan key:generate --force');
 run('php artisan config:clear', false);
 run('php artisan migrate --seed --force');
 if (!run('php artisan storage:link', false)) echo "\n(storage:link failed. On Windows run the terminal as Administrator once and run: php artisan storage:link)\n";
-echo "\n=== DONE ===\nShop : http://localhost:8000\nAdmin: http://localhost:8000/admin  (admin / admin - you will be forced to change it on first login)\n";
+echo "\n=== DONE ===\nShop : http://localhost:8000\nAdmin: http://localhost:8000/admin  (admin@example.com / password by default - set ADMIN_EMAIL / ADMIN_PASSWORD in .env before seeding)\n";
 if (strtolower(ask('Start the server now? (y/n)', 'y')) === 'y') run('php artisan serve', false);

@@ -71,7 +71,7 @@ class OrderAdminTest extends TestCase
         $this->admin();
         [$order] = $this->orderWithItem();
 
-        $response = $this->get("/admin/orders/{$order->id}/invoice");
+        $response = $this->get("/admin/orders/{$order->id}/invoice/pdf");
 
         $response->assertOk();
         $this->assertStringContainsString('application/pdf', $response->headers->get('content-type'));

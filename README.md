@@ -10,10 +10,10 @@ cd path\to\gen-aura
 php setup.php
 ```
 It creates the database, installs packages (composer install), writes .env, creates all tables,
-adds admin/admin (forced change on first login) + 4 sample products, links storage and starts the server.
+adds an admin account (admin@example.com / password by default) + 4 sample products, links storage and starts the server.
 
 Shop : http://localhost:8000
-Admin: http://localhost:8000/admin   (admin / admin - you will be forced to change it on first login)
+Admin: http://localhost:8000/admin   (admin@example.com / password - override with ADMIN_EMAIL / ADMIN_PASSWORD in .env before seeding)
 
 Next time: `php artisan serve`.
 
@@ -31,4 +31,4 @@ php artisan serve
 ## Go live
 Upload the project, point the domain to the `public` folder, `composer install --no-dev`,
 set APP_ENV=production, APP_DEBUG=false and real DB/MAIL values in `.env`,
-`php artisan migrate --seed --force`, `php artisan storage:link`. The default admin login is forced to change on first sign-in.
+`php artisan migrate --seed --force`, `php artisan storage:link`. Set ADMIN_EMAIL / ADMIN_PASSWORD in `.env` before seeding to control the admin login.
