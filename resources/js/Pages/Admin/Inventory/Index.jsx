@@ -3,12 +3,12 @@ import { useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import Pagination from '../../../Components/Pagination';
 
-function Inventory({ products, stats, filters }) {
+function Inventory({ products, stats, filters, lowStockThreshold = 5 }) {
     const [q, setQ] = useState(filters?.q ?? '');
     const [status, setStatus] = useState(filters?.status ?? '');
     const [selected, setSelected] = useState(null);
 
-    const form = useForm({ delta: '', note: '' });
+    const form = useForm({ delta: '', size: '', note: '' });
 
     const apply = (overrides = {}) => {
         router.get('/admin/inventory', { q, status, ...overrides }, { preserveState: true, preserveScroll: true, replace: true });
@@ -16,8 +16,12 @@ function Inventory({ products, stats, filters }) {
 
     const openAdjust = (product) => {
         setSelected(product);
-        form.reset();
         form.clearErrors();
+        form.setData({
+            delta: '',
+            size: product.sizes?.[0] ?? '',
+            note: '',
+        });
     };
 
     const submitAdjust = (event) => {
@@ -90,9 +94,28 @@ function Inventory({ products, stats, filters }) {
                                             <td className="px-3 py-2">{product.category}</td>
                                             <td className="px-3 py-2">৳{Number(product.price).toLocaleString()}</td>
                                             <td className="px-3 py-2">
-                                                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${product.stock <= 0 ? 'bg-red-50 text-red-600' : product.stock <= 5 ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700'}`}>
+                                                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${product.stock <= 0 ? 'bg-red-50 text-red-600' : product.stock <= lowStockThreshold ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700'}`}>
                                                     {product.stock}
                                                 </span>
+                                                {product.has_size_stock && product.sizes?.length > 0 && (
+                                                    <div className="flex flex-wrap gap-1 mt-1">
+                                                        {product.sizes.map((size) => {
+                                                            const qty = Number(product.size_stock[size] ?? 0);
+                                                            const low = qty > 0 && qty <= lowStockThreshold;
+
+                                                            return (
+                                                                <span
+                                                                    key={size}
+                                                                    className={`text-[10px] font-bold rounded-full px-1.5 py-0.5 ${
+                                                                        qty <= 0 ? 'bg-red-50 text-red-500' : low ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600'
+                                                                    }`}
+                                                                >
+                                                                    {size} {qty}
+                                                                </span>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
                                             </td>
                                             <td className="px-3 py-2">{product.status}</td>
                                             <td className="px-3 py-2 text-right">
@@ -115,8 +138,25 @@ function Inventory({ products, stats, filters }) {
                         <>
                             <div className="text-sm mb-3">
                                 <b>{selected.name}</b>
-                                <div className="text-gray-500">Current stock: {selected.stock}</div>
+                                <div className="text-gray-500">Current total stock: {selected.stock}</div>
                             </div>
+
+                            {selected.sizes?.length > 0 && (
+                                <label className="block text-sm mb-3">
+                                    Size
+                                    <select className="inp" value={form.data.size} onChange={(event) => form.setData('size', event.target.value)}>
+                                        {selected.sizes.map((size) => (
+                                            <option key={size} value={size}>{size}</option>
+                                        ))}
+                                    </select>
+                                    {selected.has_size_stock && (
+                                        <span className="text-[11px] text-gray-500">
+                                            Current {form.data.size || 'size'} stock: {Number(selected.size_stock?.[form.data.size] ?? 0)}
+                                        </span>
+                                    )}
+                                </label>
+                            )}
+
                             <label className="block text-sm mb-3">
                                 Change (+/−)
                                 <input type="number" className="inp" value={form.data.delta} onChange={(event) => form.setData('delta', event.target.value)} placeholder="e.g. 5 or -2" required />

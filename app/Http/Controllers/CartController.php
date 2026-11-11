@@ -29,6 +29,7 @@ class CartController extends Controller
                 'price' => $line['p']->price,
                 'line_total' => $line['p']->price * $line['qty'],
                 'image_url' => $line['p']->image_url,
+                'available' => $this->availableFor($line['p'], $line['size']),
                 'url' => route('product', $line['p']),
             ], $lines),
             'subtotal' => $totals['subtotal'],
@@ -40,13 +41,30 @@ class CartController extends Controller
     public function add(Request $r, Product $product)
     {
         if ($product->status !== 'active') return back()->withErrors('This product is not available');
-        if ($product->stock <= 0) return back()->withErrors('Out of stock');
 
         $size = (string) $r->input('size', '');
-        $qty = max(1, min(50, (int) $r->input('qty', 1)));
+        $sizes = $product->size_list;
+
+        if (!empty($sizes)) {
+            if ($size === '') {
+                return back()->withErrors('Please choose a size.');
+            }
+
+            if (!in_array($size, $sizes, true)) {
+                return back()->withErrors('Invalid size.');
+            }
+        }
+
+        $available = $this->availableFor($product, $size);
+
+        if ($available <= 0) {
+            return back()->withErrors($size !== '' ? 'Size ' . $size . ' is sold out.' : 'Out of stock');
+        }
+
+        $qty = max(1, min(50, $available, (int) $r->input('qty', 1)));
         $key = $product->id . '|' . $size;
         $cart = session('cart', []);
-        $cart[$key] = ['id' => $product->id, 'size' => $size, 'qty' => min(50, ($cart[$key]['qty'] ?? 0) + $qty)];
+        $cart[$key] = ['id' => $product->id, 'size' => $size, 'qty' => min($available, ($cart[$key]['qty'] ?? 0) + $qty)];
         session(['cart' => $cart]);
 
         app(AnalyticsTracker::class)->event($r, 'add_to_cart', [
@@ -65,7 +83,10 @@ class CartController extends Controller
 
         if (isset($cart[$key])) {
             $oldQty = (int) $cart[$key]['qty'];
-            $qty = min(50, max(0, (int) $r->input('qty')));
+            $product = Product::find($cart[$key]['id']);
+            $requested = max(0, (int) $r->input('qty'));
+            $available = $product ? $this->availableFor($product, (string) ($cart[$key]['size'] ?? '')) : 50;
+            $qty = min(50, $requested, max(0, $available));
             if ($qty === 0) unset($cart[$key]); else $cart[$key]['qty'] = $qty;
             session(['cart' => $cart]);
 
@@ -115,5 +136,14 @@ class CartController extends Controller
 
         return redirect(URL::temporarySignedRoute('order.success', now()->addDays(7), ['order' => $order->id]))
             ->with('done', true);
+    }
+
+    private function availableFor(Product $product, string $size): int
+    {
+        if ($product->hasSizeStock()) {
+            return (int) ($product->size_stock[$size] ?? 0);
+        }
+
+        return (int) $product->stock;
     }
 }

@@ -1,10 +1,22 @@
 import { Head, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 import StoreLayout from '../../Layouts/StoreLayout';
 import { SocialLinks } from '../../Components/SocialIcons';
 
-function About() {
+function About({ aboutImages = [] }) {
     const { settings } = usePage().props;
     const why = (settings.why_choose_us || '').split('|').map((item) => item.trim()).filter(Boolean);
+    const [activeImage, setActiveImage] = useState(0);
+    const imageCount = aboutImages.length;
+    const currentImage = imageCount > 0 ? aboutImages[Math.min(activeImage, imageCount - 1)] : null;
+
+    const goToImage = (index) => {
+        if (imageCount < 2) {
+            return;
+        }
+
+        setActiveImage(((index % imageCount) + imageCount) % imageCount);
+    };
 
     return (
         <>
@@ -18,8 +30,48 @@ function About() {
                         <SocialLinks settings={settings} className="mt-5" />
                     </div>
                     <div>
-                        {settings.about_image ? (
-                            <img src={`/storage/${settings.about_image}`} alt={settings.name} className="w-full aspect-square object-cover rounded-3xl shadow-xl" />
+                        {currentImage ? (
+                            <div className="relative">
+                                <img
+                                    src={currentImage}
+                                    alt={settings.name}
+                                    className="w-full aspect-square object-cover rounded-3xl shadow-xl"
+                                />
+
+                                {imageCount > 1 && (
+                                    <>
+                                        <button
+                                            type="button"
+                                            aria-label="Previous about image"
+                                            onClick={() => goToImage(activeImage - 1)}
+                                            className="absolute left-3 top-1/2 -translate-y-1/2 grid h-9 w-9 place-items-center rounded-full bg-white/85 text-gray-700 shadow-lg backdrop-blur transition hover:bg-white"
+                                        >
+                                            ‹
+                                        </button>
+                                        <button
+                                            type="button"
+                                            aria-label="Next about image"
+                                            onClick={() => goToImage(activeImage + 1)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 grid h-9 w-9 place-items-center rounded-full bg-white/85 text-gray-700 shadow-lg backdrop-blur transition hover:bg-white"
+                                        >
+                                            ›
+                                        </button>
+                                        <div className="absolute inset-x-0 bottom-4 flex justify-center gap-1.5">
+                                            {aboutImages.map((image, index) => (
+                                                <button
+                                                    key={`${image}-${index}`}
+                                                    type="button"
+                                                    aria-label={`Go to about image ${index + 1}`}
+                                                    onClick={() => setActiveImage(index)}
+                                                    className={`h-1.5 rounded-full transition-all ${
+                                                        index === activeImage ? 'w-5 bg-white' : 'w-1.5 bg-white/60 hover:bg-white/90'
+                                                    }`}
+                                                />
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         ) : (
                             <div className="w-full aspect-square rounded-3xl grad grid place-items-center text-white font-serif text-7xl shadow-xl">A</div>
                         )}

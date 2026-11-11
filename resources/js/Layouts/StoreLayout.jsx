@@ -1,10 +1,11 @@
-import { Link, usePage } from '@inertiajs/react';
+import { usePage } from '@inertiajs/react';
 import Brand from '../Components/Brand';
 import Flash from '../Components/Flash';
+import StoreNav from '../Components/StoreNav';
 import { SocialLinks } from '../Components/SocialIcons';
 
 export default function StoreLayout({ children }) {
-    const { settings, showrooms, cartCount, flash, errors } = usePage().props;
+    const { settings, showrooms, flash, errors } = usePage().props;
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -12,28 +13,7 @@ export default function StoreLayout({ children }) {
                 {settings.top}
             </div>
 
-            <header className="bg-white/90 backdrop-blur border-b sticky top-0 z-10">
-                <div className="max-w-6xl mx-auto px-4 py-2 flex flex-wrap items-center justify-between gap-x-3">
-                    <nav className="flex gap-4 md:gap-5 text-sm font-semibold order-last w-full justify-center pb-1 md:order-none md:w-auto md:pb-0">
-                        <Link href="/">Home</Link>
-                        <Link href="/shop">Shop</Link>
-                        <Link href="/about">About</Link>
-                        <Link href="/reviews">Reviews</Link>
-                        <Link href="/contact">Contact</Link>
-                    </nav>
-
-                    <Brand settings={settings} />
-
-                    <div className="flex items-center gap-3 text-sm font-semibold">
-                        <Link href="/cart">
-                            Cart
-                            {cartCount > 0 && (
-                                <span className="ml-1 grad text-white rounded-full px-2 py-0.5 text-xs">{cartCount}</span>
-                            )}
-                        </Link>
-                    </div>
-                </div>
-            </header>
+            <StoreNav />
 
             <main className="flex-1">
                 <Flash ok={flash?.ok} errors={errors} />

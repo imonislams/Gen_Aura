@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\InventoryMovement;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Services\Inventory\StockService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -14,13 +15,14 @@ class InventoryController extends Controller
 {
     public function index(Request $r)
     {
+        $threshold = (int) (Setting::all_()['low_stock_threshold'] ?? 5);
         $q = Product::with('category');
 
         if ($r->filled('q')) {
             $q->where('name', 'like', '%' . $r->q . '%');
         }
         if ($r->input('status') === 'low') {
-            $q->where('stock', '>', 0)->where('stock', '<=', 5);
+            $q->where('stock', '>', 0)->where('stock', '<=', $threshold);
         } elseif ($r->input('status') === 'out') {
             $q->where('stock', '<=', 0);
         }
@@ -32,6 +34,9 @@ class InventoryController extends Controller
             'category' => $product->category?->name ?? ($product->cat ?: 'Uncategorised'),
             'price' => $product->price,
             'stock' => $product->stock,
+            'sizes' => $product->size_list,
+            'size_stock' => $product->size_stock ?? [],
+            'has_size_stock' => $product->hasSizeStock(),
             'status' => $product->status,
         ]);
 
@@ -39,10 +44,11 @@ class InventoryController extends Controller
             'products' => $products,
             'stats' => [
                 'products' => Product::count(),
-                'low' => Product::where('stock', '>', 0)->where('stock', '<=', 5)->count(),
+                'low' => Product::where('stock', '>', 0)->where('stock', '<=', $threshold)->count(),
                 'out' => Product::where('stock', '<=', 0)->count(),
                 'units' => (int) Product::sum('stock'),
             ],
+            'lowStockThreshold' => $threshold,
             'filters' => $r->only(['q', 'status']),
         ]);
     }
@@ -62,7 +68,10 @@ class InventoryController extends Controller
             'id' => $movement->id,
             'product' => $movement->product?->name ?? 'Deleted product',
             'type' => $movement->type,
+            'size' => $movement->size,
             'quantity_delta' => $movement->quantity_delta,
+            'size_stock_before' => $movement->size_stock_before,
+            'size_stock_after' => $movement->size_stock_after,
             'stock_before' => $movement->stock_before,
             'stock_after' => $movement->stock_after,
             'reference_type' => $movement->reference_type,
@@ -83,11 +92,12 @@ class InventoryController extends Controller
     {
         $d = $r->validate([
             'delta' => 'required|integer|not_in:0',
+            'size' => 'nullable|string|max:20',
             'note' => 'nullable|max:255',
         ]);
 
         try {
-            app(StockService::class)->adjust($product, (int) $d['delta'], $d['note'] ?? null, session('admin_id'));
+            app(StockService::class)->adjust($product, (int) $d['delta'], $d['note'] ?? null, session('admin_id'), $d['size'] ?? null);
         } catch (RuntimeException $e) {
             return back()->withErrors($e->getMessage());
         }

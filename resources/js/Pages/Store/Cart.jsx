@@ -1,7 +1,11 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import StoreLayout from '../../Layouts/StoreLayout';
 
 function Cart({ lines, subtotal, ship, total }) {
+    const { settings } = usePage().props;
+    const threshold = Number(settings.low_stock_threshold ?? 5);
+    const hasShortage = lines.some((line) => (line.available ?? 0) < line.qty);
+
     const update = (line, qty) => {
         router.post('/cart/update', { key: line.key, qty }, { preserveScroll: true });
     };
@@ -36,12 +40,24 @@ function Cart({ lines, subtotal, ship, total }) {
                                     {line.name}{line.size ? ` (${line.size})` : ''}
                                 </Link>
                                 <div className="text-sm">৳{Number(line.price).toLocaleString()}</div>
+                                {line.available !== undefined && line.available <= threshold && line.available > 0 && (
+                                    <div className="text-[11px] text-mag font-semibold">Only {line.available} left</div>
+                                )}
+                                {line.available !== undefined && line.qty > line.available && (
+                                    <div className="text-[11px] text-red-600">Only {line.available} left — reduce quantity</div>
+                                )}
                             </div>
                             <div className="flex flex-col items-end gap-1">
                                 <div className="flex items-center gap-2">
                                     <button className="w-7 h-7 rounded-full border" disabled={line.qty <= 1} onClick={() => update(line, line.qty - 1)}>−</button>
                                     <span>{line.qty}</span>
-                                    <button className="w-7 h-7 rounded-full border" disabled={line.qty >= 50} onClick={() => update(line, line.qty + 1)}>+</button>
+                                    <button
+                                        className="w-7 h-7 rounded-full border"
+                                        disabled={line.qty >= Math.min(50, line.available ?? 50)}
+                                        onClick={() => update(line, line.qty + 1)}
+                                    >
+                                        +
+                                    </button>
                                 </div>
                                 <button className="text-xs text-red-500" onClick={() => remove(line)}>Remove</button>
                             </div>
@@ -55,7 +71,17 @@ function Cart({ lines, subtotal, ship, total }) {
                     <div className="text-sm flex justify-between py-1"><span>Subtotal</span><span>৳{Number(subtotal).toLocaleString()}</span></div>
                     <div className="text-sm flex justify-between py-1"><span>Delivery</span><span>৳{Number(ship).toLocaleString()}</span></div>
                     <div className="font-bold flex justify-between text-lg border-t mt-2 pt-3"><span>Total</span><span>৳{Number(total).toLocaleString()}</span></div>
-                    <Link href="/checkout" className="btn w-full mt-4">Proceed to checkout</Link>
+                    {hasShortage && (
+                        <div className="bg-red-50 text-red-700 rounded-xl p-2.5 text-xs mb-3">
+                            One or more sizes no longer have enough stock. Reduce the quantity before checkout.
+                        </div>
+                    )}
+                    <Link
+                        href="/checkout"
+                        className={`btn w-full mt-4 ${hasShortage ? 'pointer-events-none opacity-50' : ''}`}
+                    >
+                        Proceed to checkout
+                    </Link>
                     <p className="text-xs text-gray-400 text-center mt-2">Cash on Delivery · totals re-verified on the server</p>
                 </div>
             </div>

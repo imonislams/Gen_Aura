@@ -82,6 +82,7 @@ class ProductController extends Controller
             'price' => $product->price,
             'old_price' => $product->old_price,
             'stock' => $product->stock,
+            'size_stock' => $product->size_stock ?? [],
             'status' => $product->status,
             'featured' => (bool) $product->featured,
             'image_url' => $product->image_url,
@@ -93,7 +94,33 @@ class ProductController extends Controller
     {
         $product = Product::create($this->payload($r, new Product()));
 
-        if ((int) $product->stock > 0) {
+        if ($product->hasSizeStock()) {
+            $running = 0;
+
+            foreach ($product->size_stock as $size => $qty) {
+                $qty = (int) $qty;
+
+                if ($qty <= 0) {
+                    continue;
+                }
+
+                InventoryMovement::create([
+                    'product_id' => $product->id,
+                    'type' => 'initial_stock',
+                    'size' => $size,
+                    'quantity_delta' => $qty,
+                    'size_stock_before' => 0,
+                    'size_stock_after' => $qty,
+                    'stock_before' => $running,
+                    'stock_after' => $running + $qty,
+                    'note' => 'Product created',
+                    'admin_id' => session('admin_id'),
+                    'created_at' => now(),
+                ]);
+
+                $running += $qty;
+            }
+        } elseif ((int) $product->stock > 0) {
             InventoryMovement::create([
                 'product_id' => $product->id,
                 'type' => 'initial_stock',
@@ -112,10 +139,41 @@ class ProductController extends Controller
     public function update(Request $r, Product $product)
     {
         $oldStock = (int) $product->stock;
+        $oldSizeStock = $product->size_stock;
 
         $product->update($this->payload($r, $product));
 
-        if ((int) $product->stock !== $oldStock) {
+        if ($product->hasSizeStock() && is_array($oldSizeStock) && count($oldSizeStock) > 0) {
+            $running = $oldStock;
+            $sizes = array_unique(array_merge(array_keys($oldSizeStock), array_keys($product->size_stock)));
+            sort($sizes);
+
+            foreach ($sizes as $size) {
+                $beforeSize = (int) ($oldSizeStock[$size] ?? 0);
+                $afterSize = (int) ($product->size_stock[$size] ?? 0);
+                $delta = $afterSize - $beforeSize;
+
+                if ($delta === 0) {
+                    continue;
+                }
+
+                InventoryMovement::create([
+                    'product_id' => $product->id,
+                    'type' => 'manual_adjustment',
+                    'size' => $size,
+                    'quantity_delta' => $delta,
+                    'size_stock_before' => $beforeSize,
+                    'size_stock_after' => $afterSize,
+                    'stock_before' => $running,
+                    'stock_after' => $running + $delta,
+                    'note' => 'Admin product edit',
+                    'admin_id' => session('admin_id'),
+                    'created_at' => now(),
+                ]);
+
+                $running += $delta;
+            }
+        } elseif ((int) $product->stock !== $oldStock) {
             InventoryMovement::create([
                 'product_id' => $product->id,
                 'type' => 'manual_adjustment',
@@ -160,6 +218,8 @@ class ProductController extends Controller
             'price' => 'required|integer|min:0',
             'old_price' => 'nullable|integer|min:0',
             'stock' => 'required|integer|min:0',
+            'size_stock' => 'nullable|array',
+            'size_stock.*' => 'integer|min:0',
             'status' => ['required', Rule::in(['active', 'inactive'])],
             'featured' => 'nullable|boolean',
             'image' => 'nullable|image|max:4096',
@@ -173,6 +233,28 @@ class ProductController extends Controller
         $d['old_price'] = $d['old_price'] ?? 0;
         $d['featured'] = (bool) ($d['featured'] ?? false);
         $d['status'] = $d['status'] ?? 'active';
+
+        $sizeList = array_values(array_unique(array_filter(array_map('trim', explode(',', (string) ($d['sizes'] ?? ''))))));
+        $d['sizes'] = $sizeList ? implode(',', $sizeList) : null;
+
+        if (!empty($sizeList)) {
+            $sizeStock = $d['size_stock'] ?? null;
+
+            if (is_array($sizeStock) && count($sizeStock) > 0) {
+                $clean = [];
+
+                foreach ($sizeList as $size) {
+                    $clean[$size] = max(0, (int) ($sizeStock[$size] ?? 0));
+                }
+
+                $d['size_stock'] = $clean;
+                $d['stock'] = array_sum($clean);
+            } else {
+                $d['size_stock'] = null;
+            }
+        } else {
+            $d['size_stock'] = null;
+        }
 
         if (array_key_exists('category_id', $d)) {
             if (!empty($d['category_id'])) {

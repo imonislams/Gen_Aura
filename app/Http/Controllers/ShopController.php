@@ -3,6 +3,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\ContactMessage;
+use App\Models\HeroImage;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Review;
@@ -23,6 +24,23 @@ class ShopController extends Controller
         $heroImage = !empty($settings['hero_image'])
             ? asset('storage/' . $settings['hero_image'])
             : $heroProduct?->image_url;
+
+        $heroImages = HeroImage::ordered()->get()->map(fn (HeroImage $image) => [
+            'id' => $image->id,
+            'url' => asset('storage/' . $image->path),
+        ])->values();
+
+        $heroSettings = [
+            'autoplay' => ($settings['hero_autoplay'] ?? '1') === '1',
+            'duration' => (int) ($settings['hero_duration'] ?? 6500),
+            'transition' => in_array($settings['hero_transition'] ?? 'fade', ['fade', 'zoom', 'slide'], true)
+                ? $settings['hero_transition']
+                : 'fade',
+            'speed' => (float) ($settings['hero_animation_speed'] ?? 0.7),
+            'show_arrows' => ($settings['hero_show_arrows'] ?? '1') === '1',
+            'show_dots' => ($settings['hero_show_dots'] ?? '1') === '1',
+            'pause_hover' => ($settings['hero_pause_hover'] ?? '1') === '1',
+        ];
 
         $featuredCategories = Category::active()->orderBy('sort_order')->take(4)->get(['id', 'name', 'slug']);
         $featuredProducts = Product::active()->with('category')->featured()->latest()->take(4)->get();
@@ -59,6 +77,8 @@ class ShopController extends Controller
                 'name' => $heroProduct->name,
                 'price' => $heroProduct->price,
             ] : null,
+            'heroImages' => $heroImages,
+            'heroSettings' => $heroSettings,
         ]);
     }
 
@@ -190,5 +210,10 @@ class ShopController extends Controller
         return back()->with('ok', 'Thank you! We will contact you soon.');
     }
 
-    public function about() { return Inertia::render('Store/About'); }
+    public function about()
+    {
+        return Inertia::render('Store/About', [
+            'aboutImages' => collect(Setting::aboutImages())->map(fn ($path) => asset('storage/' . $path))->values(),
+        ]);
+    }
 }

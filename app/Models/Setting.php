@@ -20,11 +20,16 @@ class Setting extends Model
         'phone' => '', 'email' => '', 'address' => '',
         'logo' => '', 'favicon' => '', 'instagram' => '', 'youtube' => '', 'tiktok' => '',
         'currency' => 'BDT', 'order_prefix' => 'GA', 'cod_enabled' => '1', 'stock_display' => '1',
+        'low_stock_threshold' => '5',
         'promo_title' => '', 'promo_text' => '',
         'why_choose_us' => 'Shipped from Dhaka|Easy Returns|Quality Checked',
+        'hero_autoplay' => '1', 'hero_duration' => '6500', 'hero_transition' => 'fade',
+        'hero_animation_speed' => '0.7', 'hero_show_arrows' => '1', 'hero_show_dots' => '1',
+        'hero_pause_hover' => '1',
         'about_title' => 'About GEN AURA',
         'about_body' => 'GEN AURA is a Bangladesh-based clothing store offering premium T-shirts, shirts, pants and panjabis with cash-on-delivery across the country.',
         'about_image' => '',
+        'about_images' => '[]',
     ];
     protected static ?array $cache = null;
     public static function all_(): array
@@ -39,5 +44,23 @@ class Setting extends Model
     {
         foreach ($d as $k => $v) self::updateOrCreate(['key' => $k], ['value' => (string) $v]);
         self::$cache = null;
+    }
+
+    public static function aboutImages(): array
+    {
+        $settings = self::all_();
+        $paths = json_decode((string) ($settings['about_images'] ?? '[]'), true);
+
+        if (!is_array($paths)) {
+            $paths = [];
+        }
+
+        $paths = array_values(array_filter($paths, fn ($path) => is_string($path) && $path !== ''));
+
+        if (empty($paths) && !empty($settings['about_image'])) {
+            $paths = [$settings['about_image']];
+        }
+
+        return $paths;
     }
 }

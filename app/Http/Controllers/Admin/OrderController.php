@@ -184,6 +184,7 @@ class OrderController extends Controller
                             $this->stock->apply($product, (int) $item->qty, 'cancellation_restore', [
                                 'reference_type' => 'order',
                                 'reference_id' => $locked->id,
+                                'size' => $item->size,
                                 'note' => 'Order cancelled',
                                 'admin_id' => session('admin_id'),
                             ]);
@@ -191,6 +192,7 @@ class OrderController extends Controller
                             $this->stock->apply($product, -(int) $item->qty, 'reopen_deduction', [
                                 'reference_type' => 'order',
                                 'reference_id' => $locked->id,
+                                'size' => $item->size,
                                 'note' => 'Cancelled order reopened',
                                 'admin_id' => session('admin_id'),
                             ]);

@@ -75,8 +75,28 @@ class CheckoutService
 
                 foreach ($lines as $line) {
                     $product = Product::lockForUpdate()->find($line['p']->id);
-                    if (!$product || $product->status !== 'active' || $product->stock < $line['qty']) {
+                    $size = (string) ($line['size'] ?? '');
+
+                    if (!$product || $product->status !== 'active') {
                         throw new RuntimeException(($product->name ?? 'Product') . ': Out of stock');
+                    }
+
+                    if (!empty($product->size_list) && $size === '') {
+                        throw new RuntimeException($product->name . ': choose a size.');
+                    }
+
+                    if (!empty($product->size_list) && !in_array($size, $product->size_list, true)) {
+                        throw new RuntimeException($product->name . ': invalid size.');
+                    }
+
+                    if ($product->hasSizeStock()) {
+                        $available = (int) ($product->size_stock[$size] ?? 0);
+
+                        if ($available < $line['qty']) {
+                            throw new RuntimeException($product->name . ' (' . $size . '): only ' . $available . ' left.');
+                        }
+                    } elseif ($product->stock < $line['qty']) {
+                        throw new RuntimeException($product->name . ': Out of stock');
                     }
 
                     $items[] = [
@@ -87,7 +107,7 @@ class CheckoutService
                         'price' => $product->price,
                     ];
 
-                    $stockLines[] = ['product' => $product, 'qty' => $line['qty']];
+                    $stockLines[] = ['product' => $product, 'qty' => $line['qty'], 'size' => $size];
                     $subtotal += $product->price * $line['qty'];
                 }
 
@@ -106,6 +126,7 @@ class CheckoutService
                     $this->stock->apply($entry['product'], -$entry['qty'], 'order_sale', [
                         'reference_type' => 'order',
                         'reference_id' => $order->id,
+                        'size' => $entry['size'],
                         'note' => 'Order sale',
                     ]);
                 }

@@ -1,8 +1,10 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 
 function ProductForm({ product, categories }) {
     const editing = !!product;
+    const { settings } = usePage().props;
+    const threshold = Number(settings.low_stock_threshold ?? 5);
 
     const form = useForm({
         name: product?.name ?? '',
@@ -17,6 +19,7 @@ function ProductForm({ product, categories }) {
         price: product?.price ?? '',
         old_price: product?.old_price ?? 0,
         stock: product?.stock ?? 10,
+        size_stock: product?.size_stock ?? {},
         status: product?.status ?? 'active',
         featured: product?.featured ? 1 : 0,
         image: null,
@@ -24,6 +27,63 @@ function ProductForm({ product, categories }) {
         remove_images: [],
         _method: editing ? 'put' : undefined,
     });
+
+    const sizeList = Array.from(new Set((form.data.sizes || '').split(',').map((size) => size.trim()).filter(Boolean)));
+    const sizeStock = form.data.size_stock || {};
+    const sizeConfigured = Object.keys(sizeStock).length > 0;
+    const totalFromSizes = sizeList.reduce((sum, size) => sum + (Number(sizeStock[size]) || 0), 0);
+    const totalDisplay = sizeList.length > 0
+        ? (sizeConfigured ? totalFromSizes : Number(form.data.stock || 0))
+        : Number(form.data.stock || 0);
+
+    const updateSizes = (value) => {
+        const nextList = Array.from(new Set(value.split(',').map((size) => size.trim()).filter(Boolean)));
+
+        if (nextList.join('|') === sizeList.join('|') && !sizeConfigured) {
+            form.setData({ ...form.data, sizes: value, size_stock: {} });
+
+            return;
+        }
+
+        const nextStock = {};
+        nextList.forEach((size) => {
+            nextStock[size] = Number(sizeStock[size]) || 0;
+        });
+
+        form.setData({
+            ...form.data,
+            sizes: value,
+            size_stock: nextStock,
+            stock: nextList.length ? Object.values(nextStock).reduce((sum, qty) => sum + Number(qty || 0), 0) : form.data.stock,
+        });
+    };
+
+    const updateSizeStock = (size, value) => {
+        const next = { ...sizeStock, [size]: Math.max(0, Number(value) || 0) };
+
+        form.setData({
+            ...form.data,
+            size_stock: next,
+            stock: sizeList.reduce((sum, item) => sum + Number(next[item] || 0), 0),
+        });
+    };
+
+    const distributeTotal = () => {
+        if (!sizeList.length) {
+            return;
+        }
+
+        const total = Math.max(0, Number(form.data.stock) || 0);
+        const base = Math.floor(total / sizeList.length);
+        const remainder = total % sizeList.length;
+        const next = {};
+
+        sizeList.forEach((size, index) => {
+            next[size] = base + (index < remainder ? 1 : 0);
+        });
+
+        form.setData({ ...form.data, size_stock: next, stock: total });
+    };
 
     const toggleRemove = (path) => {
         const current = form.data.remove_images;
@@ -76,10 +136,62 @@ function ProductForm({ product, categories }) {
                     Old price (৳)
                     <input type="number" min="0" className="inp" value={form.data.old_price} onChange={(event) => form.setData('old_price', event.target.value)} />
                 </label>
-                <label className="block text-sm mb-3">
-                    Stock
-                    <input type="number" min="0" className="inp" value={form.data.stock} onChange={(event) => form.setData('stock', event.target.value)} required />
-                </label>
+                {sizeList.length === 0 ? (
+                    <label className="block text-sm mb-3">
+                        Stock
+                        <input type="number" min="0" className="inp" value={form.data.stock} onChange={(event) => form.setData('stock', event.target.value)} required />
+                    </label>
+                ) : (
+                    <div className="md:col-span-2 mb-3 rounded-xl border border-gray-100 p-3">
+                        <div className="flex items-center justify-between gap-2">
+                            <div className="text-sm font-semibold">Size stock</div>
+                            <div className="text-xs text-gray-500">
+                                Total: <b>{totalDisplay}</b>{sizeConfigured ? ' (auto)' : ''}
+                            </div>
+                        </div>
+
+                        {!sizeConfigured && (
+                            <div className="mt-2 rounded-lg bg-amber-50 p-2 text-[11px] text-amber-800">
+                                Size stock not configured. Current total stock: {form.data.stock}. Distribute it or enter quantities.
+                            </div>
+                        )}
+
+                        <div className="mt-2 grid gap-2 md:grid-cols-2">
+                            {sizeList.map((size) => {
+                                const qty = Number(sizeStock[size] || 0);
+                                const status = !sizeConfigured ? 'Not set' : qty <= 0 ? 'Sold out' : qty <= threshold ? 'Low stock' : 'In stock';
+                                const color = !sizeConfigured
+                                    ? 'text-gray-400'
+                                    : qty <= 0
+                                        ? 'text-red-600'
+                                        : qty <= threshold
+                                            ? 'text-amber-700'
+                                            : 'text-green-700';
+
+                                return (
+                                    <div key={size} className="flex items-center gap-2">
+                                        <span className="w-12 text-sm font-semibold">{size}</span>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            className="inp !mt-0"
+                                            value={sizeConfigured ? qty : ''}
+                                            onChange={(event) => updateSizeStock(size, event.target.value)}
+                                            placeholder="0"
+                                        />
+                                        <span className={`w-20 text-[11px] font-semibold ${color}`}>{status}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div className="mt-2">
+                            <button type="button" className="text-xs font-semibold text-pur" onClick={distributeTotal}>
+                                Distribute existing total
+                            </button>
+                        </div>
+                    </div>
+                )}
                 <label className="block text-sm mb-3">
                     Status
                     <select className="inp" value={form.data.status} onChange={(event) => form.setData('status', event.target.value)}>
@@ -89,7 +201,8 @@ function ProductForm({ product, categories }) {
                 </label>
                 <label className="block text-sm mb-3">
                     Sizes (comma separated)
-                    <input className="inp" value={form.data.sizes} onChange={(event) => form.setData('sizes', event.target.value)} placeholder="M,L,XL" />
+                    <input className="inp" value={form.data.sizes} onChange={(event) => updateSizes(event.target.value)} placeholder="M,L,XL" />
+                    <span className="text-[10px] text-gray-400">Adding or removing sizes updates the size stock rows.</span>
                 </label>
                 <label className="block text-sm mb-3">
                     Subtitle

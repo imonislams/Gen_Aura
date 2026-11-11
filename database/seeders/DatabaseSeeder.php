@@ -17,6 +17,8 @@ class DatabaseSeeder extends Seeder
                 'must_change_password' => false,
             ]
         );
+        $this->call(StoreDemoSeeder::class);
+
         if (Product::count() === 0) {
             foreach ([
                 ['Classic Cotton T-Shirt', 'T-Shirt', 'Everyday Comfort', 'M,L,XL', '100% Cotton,Breathable,Soft feel,Regular fit', 'Soft, breathable cotton tee for everyday wear.', 650, 850],

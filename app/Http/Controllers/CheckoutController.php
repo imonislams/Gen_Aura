@@ -39,6 +39,9 @@ class CheckoutController extends Controller
                 'price' => $line['p']->price,
                 'line_total' => $line['p']->price * $line['qty'],
                 'image_url' => $line['p']->image_url,
+                'available' => $line['p']->hasSizeStock()
+                    ? (int) ($line['p']->size_stock[$line['size']] ?? 0)
+                    : (int) $line['p']->stock,
             ], $lines),
             'subtotal' => $totals['subtotal'],
             'ship' => $totals['ship'],

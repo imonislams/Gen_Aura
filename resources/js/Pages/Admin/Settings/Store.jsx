@@ -11,6 +11,7 @@ function Store({ section }) {
         cats: settings.cats ?? '',
         cod_enabled: settings.cod_enabled ?? '1',
         stock_display: settings.stock_display ?? '1',
+        low_stock_threshold: settings.low_stock_threshold ?? '5',
     });
 
     const submit = (event) => {
@@ -57,6 +58,11 @@ function Store({ section }) {
                                 <option value="1">Show low stock</option>
                                 <option value="0">Hide</option>
                             </select>
+                        </label>
+                        <label className="block text-sm mb-3">
+                            Low stock threshold
+                            <input type="number" min="0" max="1000" className="inp" value={form.data.low_stock_threshold} onChange={(event) => form.setData('low_stock_threshold', event.target.value)} />
+                            <span className="text-[11px] text-gray-400">Used for product cards, size buttons and inventory warnings.</span>
                         </label>
                     </div>
                 </div>

@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DeliveryZoneController;
+use App\Http\Controllers\Admin\HeroGalleryController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\MaintenanceController;
 use App\Http\Controllers\Admin\MiscController;
@@ -93,6 +94,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('messages', [MiscController::class, 'messages'])->name('messages');
         Route::patch('messages/{message}/status', [MiscController::class, 'messageStatus'])->name('messages.status');
         Route::delete('messages/{message}', [MiscController::class, 'messageDestroy'])->name('messages.destroy');
+        Route::post('settings/homepage/hero', [HeroGalleryController::class, 'save'])->name('settings.homepage.hero');
         Route::get('settings/{section}', [SettingsController::class, 'show'])->name('settings.show')->where('section', 'general|store|homepage|about|social|login');
         Route::post('settings/{section}', [SettingsController::class, 'save'])->name('settings.save')->where('section', 'general|store|homepage|about|social');
         Route::post('password', [MiscController::class, 'password'])->name('password');

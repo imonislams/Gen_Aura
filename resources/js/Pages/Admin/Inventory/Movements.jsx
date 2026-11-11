@@ -42,6 +42,7 @@ function Movements({ movements, filters, types, products }) {
                                 <th className="px-3 py-2">Date</th>
                                 <th className="px-3 py-2">Product</th>
                                 <th className="px-3 py-2">Type</th>
+                                <th className="px-3 py-2">Size</th>
                                 <th className="px-3 py-2 text-right">Change</th>
                                 <th className="px-3 py-2 text-right">Before</th>
                                 <th className="px-3 py-2 text-right">After</th>
@@ -55,6 +56,12 @@ function Movements({ movements, filters, types, products }) {
                                     <td className="px-3 py-2 text-gray-500">{dhakaDateTime(movement.created_at)}</td>
                                     <td className="px-3 py-2">{movement.product}</td>
                                     <td className="px-3 py-2"><span className="px-2 py-0.5 rounded-full text-xs font-bold bg-purple-50 text-purple-700">{movement.type}</span></td>
+                                    <td className="px-3 py-2">
+                                        {movement.size ? <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600">{movement.size}</span> : '—'}
+                                        {movement.size_stock_before !== null && movement.size_stock_after !== null && (
+                                            <div className="text-[10px] text-gray-400 mt-0.5">{movement.size_stock_before} → {movement.size_stock_after}</div>
+                                        )}
+                                    </td>
                                     <td className={`px-3 py-2 text-right font-bold ${movement.quantity_delta < 0 ? 'text-red-600' : 'text-green-700'}`}>{movement.quantity_delta > 0 ? '+' : ''}{movement.quantity_delta}</td>
                                     <td className="px-3 py-2 text-right">{movement.stock_before}</td>
                                     <td className="px-3 py-2 text-right">{movement.stock_after}</td>
@@ -62,7 +69,7 @@ function Movements({ movements, filters, types, products }) {
                                     <td className="px-3 py-2 text-gray-500">{movement.note || '—'}</td>
                                 </tr>
                             ))}
-                            {movements.data.length === 0 && <tr><td colSpan="8" className="px-3 py-10 text-center text-gray-500">No stock movements yet.</td></tr>}
+                            {movements.data.length === 0 && <tr><td colSpan="9" className="px-3 py-10 text-center text-gray-500">No stock movements yet.</td></tr>}
                         </tbody>
                     </table>
                 </div>

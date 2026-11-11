@@ -1,8 +1,11 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
 import StoreLayout from '../../Layouts/StoreLayout';
 
 function Checkout({ lines, subtotal, ship, total, zones, checkoutToken }) {
+    const { settings } = usePage().props;
+    const threshold = Number(settings.low_stock_threshold ?? 5);
+    const hasShortage = lines.some((line) => (line.available ?? 0) < line.qty);
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         phone: '',
@@ -130,12 +133,18 @@ function Checkout({ lines, subtotal, ship, total, zones, checkoutToken }) {
                             Totals and stock are re-calculated on the server before the order is created.
                         </div>
 
+                        {hasShortage && (
+                            <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-xs mb-4">
+                                One or more sizes no longer have enough stock. Reduce the quantity before placing the order.
+                            </div>
+                        )}
+
                         <div className="flex items-center gap-2 mb-4 text-sm font-semibold">
                             <span className="grad text-white rounded-full px-2 py-0.5 text-xs">COD</span>
                             Cash on Delivery <span className="text-gray-400 font-normal">(only method in this phase)</span>
                         </div>
 
-                        <button className="btn w-full" disabled={processing}>
+                        <button className="btn w-full" disabled={processing || hasShortage}>
                             {processing ? 'Placing order…' : `Place order · ৳${Number(grandTotal).toLocaleString()}`}
                         </button>
                         <p className="text-xs text-gray-400 text-center mt-2">
@@ -150,6 +159,12 @@ function Checkout({ lines, subtotal, ship, total, zones, checkoutToken }) {
                                 <span>
                                     {line.name}
                                     {line.size ? ` (${line.size})` : ''} × {line.qty}
+                                    {line.available !== undefined && line.available <= threshold && line.available > 0 && (
+                                        <span className="block text-[10px] text-mag font-semibold">Only {line.available} left</span>
+                                    )}
+                                    {line.available !== undefined && line.qty > line.available && (
+                                        <span className="block text-[10px] text-red-600">Only {line.available} left — reduce quantity</span>
+                                    )}
                                 </span>
                                 <b>৳{Number(line.line_total).toLocaleString()}</b>
                             </div>

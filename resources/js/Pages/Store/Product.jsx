@@ -6,11 +6,28 @@ import StarRating from '../../Components/StarRating';
 
 function Product({ product, related, reviews }) {
     const [image, setImage] = useState(product.image_url);
-    const [size, setSize] = useState(product.sizes?.[0] ?? '');
+    const sizeOptions = product.size_options ?? [];
+    const firstAvailable = sizeOptions.find((option) => option.available)?.name ?? product.sizes?.[0] ?? '';
+    const [size, setSize] = useState(firstAvailable);
     const [qty, setQty] = useState(1);
 
-    const maxQty = Math.max(1, Math.min(50, product.stock));
-    const out = product.stock <= 0;
+    const selectedOption = sizeOptions.find((option) => option.name === size) || null;
+    const availableQty = selectedOption ? (selectedOption.stock ?? product.stock) : product.stock;
+    const maxQty = Math.max(1, Math.min(50, availableQty));
+    const out = product.stock <= 0 || (sizeOptions.length > 0 && !sizeOptions.some((option) => option.available));
+    const selectedSoldOut = selectedOption ? selectedOption.sold_out : out;
+    const lowStock = selectedOption
+        ? selectedOption.low
+        : (product.stock > 0 && product.stock <= (product.low_stock_threshold ?? 5));
+
+    const chooseSize = (option) => {
+        if (option.sold_out) {
+            return;
+        }
+
+        setSize(option.name);
+        setQty(1);
+    };
 
     const add = (go) => {
         router.post(`/cart/add/${product.id}`, { size, qty, go }, {
@@ -105,16 +122,51 @@ function Product({ product, related, reviews }) {
                                     <div className="mb-4">
                                         <div className="text-sm font-semibold mb-1">Size</div>
                                         <div className="flex gap-2 flex-wrap">
-                                            {product.sizes.map((option) => (
-                                                <button
-                                                    key={option}
-                                                    type="button"
-                                                    onClick={() => setSize(option)}
-                                                    className={`px-4 py-1.5 rounded-lg border text-sm font-semibold ${size === option ? 'bg-purple-600 text-white border-purple-600' : 'bg-white'}`}
-                                                >
-                                                    {option}
-                                                </button>
-                                            ))}
+                                            {(sizeOptions.length > 0 ? sizeOptions : product.sizes.map((name) => ({
+                                                name,
+                                                stock: null,
+                                                available: product.stock > 0,
+                                                low: false,
+                                                sold_out: product.stock <= 0,
+                                            }))).map((option) => {
+                                                const selected = size === option.name;
+                                                const disabled = option.sold_out;
+
+                                                return (
+                                                    <button
+                                                        key={option.name}
+                                                        type="button"
+                                                        disabled={disabled}
+                                                        onClick={() => chooseSize(option)}
+                                                        className={`px-3 py-2 rounded-lg border text-sm font-semibold text-left transition ${
+                                                            disabled
+                                                                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                                                                : selected
+                                                                    ? 'bg-purple-600 text-white border-purple-600'
+                                                                    : option.low
+                                                                        ? 'bg-amber-50 text-amber-800 border-amber-300'
+                                                                        : 'bg-white border-gray-200'
+                                                        }`}
+                                                    >
+                                                        <span className={`block ${disabled ? 'line-through' : ''}`}>{option.name}</span>
+                                                        <span className={`block text-[10px] font-medium ${
+                                                            selected
+                                                                ? 'text-white/80'
+                                                                : disabled
+                                                                    ? 'text-gray-400'
+                                                                    : option.low
+                                                                        ? 'text-amber-700'
+                                                                        : 'text-gray-400'
+                                                        }`}>
+                                                            {disabled
+                                                                ? 'Sold out'
+                                                                : option.stock !== null
+                                                                    ? (option.low ? `Only ${option.stock} left` : `${option.stock} in stock`)
+                                                                    : 'In stock'}
+                                                        </span>
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 )}
@@ -122,17 +174,33 @@ function Product({ product, related, reviews }) {
                                 <div className="flex items-center gap-3 mb-4">
                                     <span className="text-sm font-semibold">Quantity</span>
                                     <div className="flex items-center gap-2">
-                                        <button type="button" className="w-8 h-8 rounded-full border" disabled={qty <= 1} onClick={() => setQty(Math.max(1, qty - 1))}>−</button>
+                                        <button type="button" className="w-8 h-8 rounded-full border" disabled={qty <= 1 || selectedSoldOut} onClick={() => setQty(Math.max(1, qty - 1))}>−</button>
                                         <span className="w-8 text-center">{qty}</span>
-                                        <button type="button" className="w-8 h-8 rounded-full border" disabled={qty >= maxQty} onClick={() => setQty(Math.min(maxQty, qty + 1))}>+</button>
+                                        <button type="button" className="w-8 h-8 rounded-full border" disabled={qty >= maxQty || selectedSoldOut} onClick={() => setQty(Math.min(maxQty, qty + 1))}>+</button>
                                     </div>
-                                    {product.stock <= 5 && <span className="text-sm text-mag font-semibold">{product.stock} left</span>}
+                                    {lowStock && (
+                                        <span className="text-sm text-mag font-semibold">
+                                            {selectedOption?.stock !== null && selectedOption?.stock !== undefined
+                                                ? `Only ${selectedOption.stock} left`
+                                                : `${product.stock} left`}
+                                        </span>
+                                    )}
                                 </div>
 
-                                <button type="button" onClick={() => add('bag')} className="w-full border border-gray-400 rounded-xl py-3 font-semibold bg-white">
+                                <button
+                                    type="button"
+                                    onClick={() => add('bag')}
+                                    disabled={out || selectedSoldOut}
+                                    className="w-full border border-gray-400 rounded-xl py-3 font-semibold bg-white disabled:opacity-50"
+                                >
                                     👉 Add to bag
                                 </button>
-                                <button type="button" onClick={() => add('buy')} className="w-full mt-3 rounded-xl py-3 font-semibold bg-black text-white">
+                                <button
+                                    type="button"
+                                    onClick={() => add('buy')}
+                                    disabled={out || selectedSoldOut}
+                                    className="w-full mt-3 rounded-xl py-3 font-semibold bg-black text-white disabled:opacity-50"
+                                >
                                     Buy it now
                                 </button>
                             </>

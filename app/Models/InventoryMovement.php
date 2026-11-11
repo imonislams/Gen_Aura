@@ -10,12 +10,14 @@ class InventoryMovement extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'product_id', 'type', 'quantity_delta', 'stock_before', 'stock_after',
-        'reference_type', 'reference_id', 'note', 'admin_id', 'created_at',
+        'product_id', 'type', 'size', 'quantity_delta', 'size_stock_before', 'size_stock_after',
+        'stock_before', 'stock_after', 'reference_type', 'reference_id', 'note', 'admin_id', 'created_at',
     ];
 
     protected $casts = [
         'quantity_delta' => 'integer',
+        'size_stock_before' => 'integer',
+        'size_stock_after' => 'integer',
         'stock_before' => 'integer',
         'stock_after' => 'integer',
         'created_at' => 'datetime',

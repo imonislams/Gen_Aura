@@ -12,17 +12,27 @@ class Product extends Model
 
     protected $fillable = [
         'name', 'slug', 'sku', 'cat', 'category_id', 'sub', 'sizes', 'feat', 'description',
-        'price', 'old_price', 'stock', 'status', 'featured', 'image', 'images',
+        'price', 'old_price', 'stock', 'size_stock', 'status', 'featured', 'image', 'images',
     ];
 
     protected $casts = [
         'images' => 'array',
+        'size_stock' => 'array',
         'featured' => 'boolean',
         'category_id' => 'integer',
         'price' => 'integer',
         'old_price' => 'integer',
         'stock' => 'integer',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (Product $product) {
+            if (!empty($product->size_list) && is_array($product->size_stock) && count($product->size_stock) > 0) {
+                $product->stock = $product->sizeStockTotal();
+            }
+        });
+    }
 
     public function category(): BelongsTo
     {
@@ -57,6 +67,32 @@ class Product extends Model
     public function getFeatListAttribute(): array
     {
         return array_values(array_filter(array_map('trim', explode(',', (string) $this->feat))));
+    }
+
+    public function hasSizeStock(): bool
+    {
+        return !empty($this->size_list) && is_array($this->size_stock) && count($this->size_stock) > 0;
+    }
+
+    public function stockForSize(string $size): ?int
+    {
+        if (!$this->hasSizeStock() || !array_key_exists($size, $this->size_stock)) {
+            return null;
+        }
+
+        return (int) $this->size_stock[$size];
+    }
+
+    public function isSizeAvailable(string $size): bool
+    {
+        $stock = $this->stockForSize($size);
+
+        return $stock === null ? (int) $this->stock > 0 : $stock > 0;
+    }
+
+    public function sizeStockTotal(): int
+    {
+        return (int) array_sum(array_map('intval', $this->size_stock ?? []));
     }
 
     public function getOffAttribute(): int

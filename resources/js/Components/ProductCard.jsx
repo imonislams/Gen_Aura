@@ -2,7 +2,16 @@ import { Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 
 export default function ProductCard({ product }) {
-    const out = product.stock <= 0;
+    const sizeOptions = product.size_options ?? [];
+    const availableOption = sizeOptions.find((option) => option.available) || null;
+    const out = product.stock <= 0 || (sizeOptions.length > 0 && !availableOption);
+    const defaultSize = availableOption?.name ?? product.sizes?.[0] ?? '';
+    const threshold = product.low_stock_threshold ?? 5;
+    const lowStock = availableOption
+        ? (availableOption.stock !== null
+            ? (availableOption.low ? availableOption.stock : null)
+            : (product.stock > 0 && product.stock <= threshold ? product.stock : null))
+        : (product.stock > 0 && product.stock <= threshold ? product.stock : null);
     const [busy, setBusy] = useState(false);
 
     const add = (go) => {
@@ -11,7 +20,7 @@ export default function ProductCard({ product }) {
         }
         setBusy(true);
         router.post(`/cart/add/${product.id}`, {
-            size: product.sizes?.[0] ?? '',
+            size: defaultSize,
             qty: 1,
             go,
         }, {
@@ -39,9 +48,9 @@ export default function ProductCard({ product }) {
                         Out of stock
                     </span>
                 ) : (
-                    product.stock <= 5 && (
+                    lowStock !== null && (
                         <span className="absolute bottom-2 left-2 bg-white/90 text-mag text-xs font-bold rounded-full px-2 py-1">
-                            {product.stock} left
+                            {lowStock} left
                         </span>
                     )
                 )}

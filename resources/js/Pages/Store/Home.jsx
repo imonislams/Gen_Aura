@@ -1,8 +1,9 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import StoreLayout from '../../Layouts/StoreLayout';
 import ProductCard from '../../Components/ProductCard';
+import StoreHero from '../../Components/StoreHero';
 
-function Home({ products, featuredCategories, featuredProducts, bestSellers, reviews, heroImage, heroProduct }) {
+function Home({ products, featuredCategories, featuredProducts, bestSellers, reviews, heroImage, heroProduct, heroImages = [], heroSettings = {} }) {
     const { settings } = usePage().props;
     const why = (settings.why_choose_us || '').split('|').map((item) => item.trim()).filter(Boolean);
 
@@ -11,6 +12,9 @@ function Home({ products, featuredCategories, featuredProducts, bestSellers, rev
             <Head title="Home" />
 
             <section className="max-w-6xl mx-auto px-4 pt-8">
+                {heroImages.length > 0 ? (
+                    <StoreHero images={heroImages} settings={heroSettings} />
+                ) : (
                 <div className="relative overflow-hidden rounded-3xl grad text-white shadow-xl">
                     <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-white/10" />
                     <div className="absolute -bottom-28 -left-16 w-80 h-80 rounded-full bg-white/10" />
@@ -42,6 +46,7 @@ function Home({ products, featuredCategories, featuredProducts, bestSellers, rev
                         )}
                     </div>
                 </div>
+                )}
             </section>
 
             {featuredCategories.length > 0 && (
