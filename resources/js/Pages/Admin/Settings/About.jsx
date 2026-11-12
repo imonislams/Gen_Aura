@@ -216,24 +216,24 @@ function About({ section, aboutImages = [] }) {
             }
         });
 
-        form
-            .transform((data) => ({
-                ...data,
-                about_images: tokens,
-                new_about_images: newFiles,
-                replace_about_images: replacements,
-                about_images_present: true,
-            }))
-            .post('/admin/settings/about', {
-                forceFormData: true,
-                preserveScroll: true,
-                onSuccess: (page) => {
-                    objectUrls.current.forEach((url) => URL.revokeObjectURL(url));
-                    objectUrls.current.clear();
-                    setItems((page.props.aboutImages || []).map(savedItem));
-                    setLocalError('');
-                },
-            });
+        form.transform((data) => ({
+            ...data,
+            about_images: tokens,
+            new_about_images: newFiles,
+            replace_about_images: replacements,
+            about_images_present: true,
+        }));
+
+        form.post('/admin/settings/about', {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: (page) => {
+                objectUrls.current.forEach((url) => URL.revokeObjectURL(url));
+                objectUrls.current.clear();
+                setItems((page.props.aboutImages || []).map(savedItem));
+                setLocalError('');
+            },
+        });
     };
 
     return (
@@ -411,9 +411,16 @@ function About({ section, aboutImages = [] }) {
                     </div>
                 </div>
 
-                <button className="btn" disabled={form.processing}>
-                    {form.processing ? 'Saving…' : 'Save about page'}
-                </button>
+                <div className="flex flex-wrap items-center gap-3">
+                    <button className="btn" disabled={form.processing}>
+                        {form.processing ? 'Saving…' : 'Save about page'}
+                    </button>
+                    {form.recentlySuccessful && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1.5 text-sm font-semibold text-green-700">
+                            ✓ Saved
+                        </span>
+                    )}
+                </div>
             </form>
         </>
     );
