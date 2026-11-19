@@ -8,7 +8,7 @@ function Inventory({ products, stats, filters, lowStockThreshold = 5 }) {
     const [status, setStatus] = useState(filters?.status ?? '');
     const [selected, setSelected] = useState(null);
 
-    const form = useForm({ delta: '', size: '', note: '' });
+    const form = useForm({ delta: '', variant_id: '', size: '', note: '' });
 
     const apply = (overrides = {}) => {
         router.get('/admin/inventory', { q, status, ...overrides }, { preserveState: true, preserveScroll: true, replace: true });
@@ -19,6 +19,7 @@ function Inventory({ products, stats, filters, lowStockThreshold = 5 }) {
         form.clearErrors();
         form.setData({
             delta: '',
+            variant_id: product.has_variants ? (product.variants?.[0]?.id ?? '') : '',
             size: product.sizes?.[0] ?? '',
             note: '',
         });
@@ -97,7 +98,25 @@ function Inventory({ products, stats, filters, lowStockThreshold = 5 }) {
                                                 <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${product.stock <= 0 ? 'bg-red-50 text-red-600' : product.stock <= lowStockThreshold ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700'}`}>
                                                     {product.stock}
                                                 </span>
-                                                {product.has_size_stock && product.sizes?.length > 0 && (
+                                                {product.has_variants && product.variants?.length > 0 && (
+                                                    <div className="flex flex-wrap gap-1 mt-1">
+                                                        {product.variants.map((variant) => {
+                                                            const low = variant.stock > 0 && variant.stock <= lowStockThreshold;
+
+                                                            return (
+                                                                <span
+                                                                    key={variant.id}
+                                                                    className={`text-[10px] font-bold rounded-full px-1.5 py-0.5 ${
+                                                                        variant.stock <= 0 ? 'bg-red-50 text-red-500' : low ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600'
+                                                                    } ${variant.status !== 'active' || variant.color_status !== 'active' ? 'line-through opacity-60' : ''}`}
+                                                                >
+                                                                    {variant.label} {variant.stock}
+                                                                </span>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                                {!product.has_variants && product.has_size_stock && product.sizes?.length > 0 && (
                                                     <div className="flex flex-wrap gap-1 mt-1">
                                                         {product.sizes.map((size) => {
                                                             const qty = Number(product.size_stock[size] ?? 0);
@@ -141,7 +160,20 @@ function Inventory({ products, stats, filters, lowStockThreshold = 5 }) {
                                 <div className="text-gray-500">Current total stock: {selected.stock}</div>
                             </div>
 
-                            {selected.sizes?.length > 0 && (
+                            {selected.has_variants && selected.variants?.length > 0 && (
+                                <label className="block text-sm mb-3">
+                                    Variant
+                                    <select className="inp" value={form.data.variant_id} onChange={(event) => form.setData('variant_id', event.target.value)}>
+                                        {selected.variants.map((variant) => (
+                                            <option key={variant.id} value={variant.id}>
+                                                {variant.label} · {variant.stock} in stock{variant.status !== 'active' || variant.color_status !== 'active' ? ' (disabled)' : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+                            )}
+
+                            {!selected.has_variants && selected.sizes?.length > 0 && (
                                 <label className="block text-sm mb-3">
                                     Size
                                     <select className="inp" value={form.data.size} onChange={(event) => form.setData('size', event.target.value)}>

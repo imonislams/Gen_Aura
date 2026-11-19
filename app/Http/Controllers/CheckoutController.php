@@ -33,15 +33,21 @@ class CheckoutController extends Controller
         return Inertia::render('Store/Checkout', [
             'lines' => array_map(fn ($line) => [
                 'key' => $line['key'],
+                'variant_id' => $line['variant']?->id,
                 'name' => $line['p']->name,
+                'color' => $line['color'],
                 'size' => $line['size'],
                 'qty' => $line['qty'],
                 'price' => $line['p']->price,
                 'line_total' => $line['p']->price * $line['qty'],
-                'image_url' => $line['p']->image_url,
-                'available' => $line['p']->hasSizeStock()
-                    ? (int) ($line['p']->size_stock[$line['size']] ?? 0)
-                    : (int) $line['p']->stock,
+                'image_url' => $line['variant']?->image_url ?? $line['p']->image_url,
+                'available' => $line['variant']
+                    ? ($line['variant']->isAvailable() ? (int) $line['variant']->stock : 0)
+                    : ($line['p']->has_variants
+                        ? 0
+                        : ($line['p']->hasSizeStock()
+                            ? (int) ($line['p']->size_stock[$line['size']] ?? 0)
+                            : (int) $line['p']->stock)),
             ], $lines),
             'subtotal' => $totals['subtotal'],
             'ship' => $totals['ship'],
@@ -110,7 +116,9 @@ class CheckoutController extends Controller
                 'items' => $order->items->map(fn ($item) => [
                     'id' => $item->id,
                     'name' => $item->name,
+                    'color' => $item->color,
                     'size' => $item->size,
+                    'sku' => $item->sku,
                     'qty' => $item->qty,
                     'price' => $item->price,
                     'line_total' => $item->price * $item->qty,

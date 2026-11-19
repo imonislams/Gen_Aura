@@ -24,6 +24,7 @@ function OrderSuccess({ order }) {
                             <div key={item.id} className="flex justify-between gap-3 py-1.5 text-sm">
                                 <span>
                                     {item.name}
+                                    {item.color ? ` · ${item.color}` : ''}
                                     {item.size ? ` (${item.size})` : ''} × {item.qty}
                                 </span>
                                 <b>৳{Number(item.line_total).toLocaleString()}</b>

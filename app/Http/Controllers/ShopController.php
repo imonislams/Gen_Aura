@@ -17,7 +17,7 @@ class ShopController extends Controller
 {
     public function home()
     {
-        $products = Product::active()->with('category')->latest()->take(8)->get();
+        $products = Product::active()->with(['category', 'variants.color'])->latest()->take(8)->get();
         $reviews = Review::approved()->latest()->take(3)->get();
         $settings = Setting::all_();
         $heroProduct = $products->first();
@@ -43,7 +43,7 @@ class ShopController extends Controller
         ];
 
         $featuredCategories = Category::active()->orderBy('sort_order')->take(4)->get(['id', 'name', 'slug']);
-        $featuredProducts = Product::active()->with('category')->featured()->latest()->take(4)->get();
+        $featuredProducts = Product::active()->with(['category', 'variants.color'])->featured()->latest()->take(4)->get();
 
         $bestSellerIds = OrderItem::selectRaw('product_id, sum(qty) as sold')
             ->whereNotNull('product_id')
@@ -53,7 +53,7 @@ class ShopController extends Controller
             ->take(4)
             ->pluck('product_id');
 
-        $bestSellers = Product::active()->with('category')->whereIn('id', $bestSellerIds)->get()
+        $bestSellers = Product::active()->with(['category', 'variants.color'])->whereIn('id', $bestSellerIds)->get()
             ->sortBy(fn (Product $p) => $bestSellerIds->search($p->id))
             ->values();
 
@@ -84,7 +84,7 @@ class ShopController extends Controller
 
     public function shop(Request $r)
     {
-        $q = Product::active()->with('category');
+        $q = Product::active()->with(['category', 'variants.color']);
         if ($r->filled('cat')) $q->where('cat', $r->cat);
         if ($r->filled('q')) $q->where('name', 'like', '%' . $r->q . '%');
         if ($r->filled('min')) $q->where('price', '>=', (int) $r->min);
@@ -112,9 +112,9 @@ class ShopController extends Controller
     {
         abort_if($product->status !== 'active', 404);
 
-        $product->load('category');
+        $product->load(['category', 'variants.color']);
 
-        $related = Product::active()->with('category')
+        $related = Product::active()->with(['category', 'variants.color'])
             ->where('id', '!=', $product->id)
             ->when($product->category_id, fn ($query) => $query->where('category_id', $product->category_id))
             ->latest()
@@ -122,7 +122,7 @@ class ShopController extends Controller
             ->get();
 
         if ($related->isEmpty()) {
-            $related = Product::active()->with('category')
+            $related = Product::active()->with(['category', 'variants.color'])
                 ->where('id', '!=', $product->id)
                 ->latest()
                 ->take(4)

@@ -3,15 +3,19 @@ import { useState } from 'react';
 
 export default function ProductCard({ product }) {
     const sizeOptions = product.size_options ?? [];
+    const hasVariants = !!product.has_variants && (product.variants?.length ?? 0) > 0;
+    const defaultVariant = hasVariants ? (product.variants.find((variant) => variant.available) || null) : null;
     const availableOption = sizeOptions.find((option) => option.available) || null;
-    const out = product.stock <= 0 || (sizeOptions.length > 0 && !availableOption);
-    const defaultSize = availableOption?.name ?? product.sizes?.[0] ?? '';
+    const out = hasVariants ? !defaultVariant : (product.stock <= 0 || (sizeOptions.length > 0 && !availableOption));
+    const defaultSize = hasVariants ? (defaultVariant?.size ?? '') : (availableOption?.name ?? product.sizes?.[0] ?? '');
     const threshold = product.low_stock_threshold ?? 5;
-    const lowStock = availableOption
-        ? (availableOption.stock !== null
-            ? (availableOption.low ? availableOption.stock : null)
-            : (product.stock > 0 && product.stock <= threshold ? product.stock : null))
-        : (product.stock > 0 && product.stock <= threshold ? product.stock : null);
+    const lowStock = hasVariants
+        ? (defaultVariant?.low ? defaultVariant.stock : null)
+        : (availableOption
+            ? (availableOption.stock !== null
+                ? (availableOption.low ? availableOption.stock : null)
+                : (product.stock > 0 && product.stock <= threshold ? product.stock : null))
+            : (product.stock > 0 && product.stock <= threshold ? product.stock : null));
     const [busy, setBusy] = useState(false);
 
     const add = (go) => {
@@ -20,6 +24,7 @@ export default function ProductCard({ product }) {
         }
         setBusy(true);
         router.post(`/cart/add/${product.id}`, {
+            variant_id: defaultVariant?.id,
             size: defaultSize,
             qty: 1,
             go,

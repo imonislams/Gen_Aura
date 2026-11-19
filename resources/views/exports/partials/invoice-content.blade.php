@@ -39,7 +39,7 @@
     <thead>
       <tr>
         <th>Item</th>
-        <th>Size</th>
+        <th>Color / Size</th>
         <th>Qty</th>
         <th class="right">Price</th>
         <th class="right">Line total</th>
@@ -49,7 +49,7 @@
       @foreach($order->items as $item)
       <tr>
         <td>{{ $item->name }}</td>
-        <td>{{ $item->size ?: '—' }}</td>
+        <td>{{ trim(($item->color ? $item->color . ' / ' : '') . ($item->size ?? ''), ' /') ?: '—' }}</td>
         <td>{{ $item->qty }}</td>
         <td class="right">BDT {{ number_format($item->price) }}</td>
         <td class="right">BDT {{ number_format($item->price * $item->qty) }}</td>

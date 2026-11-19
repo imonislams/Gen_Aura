@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
@@ -12,12 +13,13 @@ class Product extends Model
 
     protected $fillable = [
         'name', 'slug', 'sku', 'cat', 'category_id', 'sub', 'sizes', 'feat', 'description',
-        'price', 'old_price', 'stock', 'size_stock', 'status', 'featured', 'image', 'images',
+        'price', 'old_price', 'stock', 'size_stock', 'has_variants', 'status', 'featured', 'image', 'images',
     ];
 
     protected $casts = [
         'images' => 'array',
         'size_stock' => 'array',
+        'has_variants' => 'boolean',
         'featured' => 'boolean',
         'category_id' => 'integer',
         'price' => 'integer',
@@ -28,6 +30,10 @@ class Product extends Model
     protected static function booted(): void
     {
         static::saving(function (Product $product) {
+            if ($product->has_variants) {
+                return;
+            }
+
             if (!empty($product->size_list) && is_array($product->size_stock) && count($product->size_stock) > 0) {
                 $product->stock = $product->sizeStockTotal();
             }
@@ -37,6 +43,48 @@ class Product extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function colors(): HasMany
+    {
+        return $this->hasMany(ProductColor::class)->orderBy('sort_order');
+    }
+
+    public function variants(): HasMany
+    {
+        return $this->hasMany(ProductVariant::class)->orderBy('id');
+    }
+
+    public function isVariantProduct(): bool
+    {
+        return (bool) $this->has_variants;
+    }
+
+    public function variantStockTotal(): int
+    {
+        return (int) $this->variants()
+            ->where('status', 'active')
+            ->where(function ($query) {
+                $query->whereNull('color_id')
+                    ->orWhereHas('color', fn ($color) => $color->where('status', 'active'));
+            })
+            ->sum('stock');
+    }
+
+    public function syncVariantStock(): void
+    {
+        $active = $this->variants()
+            ->where('status', 'active')
+            ->where(function ($query) {
+                $query->whereNull('color_id')
+                    ->orWhereHas('color', fn ($color) => $color->where('status', 'active'));
+            });
+
+        $this->forceFill([
+            'stock' => (int) (clone $active)->sum('stock'),
+            'sizes' => (clone $active)->whereNotNull('size')->orderBy('id')->pluck('size')->unique()->implode(',') ?: null,
+            'size_stock' => null,
+        ])->saveQuietly();
     }
 
     public function scopeActive($query)
@@ -71,7 +119,7 @@ class Product extends Model
 
     public function hasSizeStock(): bool
     {
-        return !empty($this->size_list) && is_array($this->size_stock) && count($this->size_stock) > 0;
+        return !$this->has_variants && !empty($this->size_list) && is_array($this->size_stock) && count($this->size_stock) > 0;
     }
 
     public function stockForSize(string $size): ?int

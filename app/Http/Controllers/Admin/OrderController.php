@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\Setting;
 use App\Services\Inventory\StockService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -45,7 +46,7 @@ class OrderController extends Controller
                 'payment_method' => $order->payment_method,
                 'created_at' => $order->created_at?->toIso8601String(),
                 'items_count' => $order->items->count(),
-                'items_summary' => $order->items->map(fn ($item) => $item->name . ($item->size ? ' (' . $item->size . ')' : '') . ' ×' . $item->qty)->implode(', '),
+                'items_summary' => $order->items->map(fn ($item) => $item->name . ($item->color || $item->size ? ' (' . trim(($item->color ? $item->color . ' / ' : '') . $item->size, ' /') . ')' : '') . ' ×' . $item->qty)->implode(', '),
             ]),
             'filters' => $r->only(['status', 'q']),
             'statuses' => Order::STATUS,
@@ -94,7 +95,9 @@ class OrderController extends Controller
                 'items' => $order->items->map(fn ($item) => [
                     'id' => $item->id,
                     'name' => $item->name,
+                    'color' => $item->color,
                     'size' => $item->size,
+                    'sku' => $item->sku,
                     'qty' => $item->qty,
                     'price' => $item->price,
                     'line_total' => $item->price * $item->qty,
@@ -133,7 +136,9 @@ class OrderController extends Controller
                 'items' => $order->items->map(fn ($item) => [
                     'id' => $item->id,
                     'name' => $item->name,
+                    'color' => $item->color,
                     'size' => $item->size,
+                    'sku' => $item->sku,
                     'qty' => $item->qty,
                     'price' => $item->price,
                     'line_total' => $item->price * $item->qty,
@@ -175,27 +180,39 @@ class OrderController extends Controller
 
                 if ($was !== $now) {
                     foreach ($locked->items as $item) {
-                        $product = Product::lockForUpdate()->find($item->product_id);
+                        $product = Product::withTrashed()->lockForUpdate()->find($item->product_id);
                         if (!$product) {
                             continue;
                         }
 
-                        if ($now) {
-                            $this->stock->apply($product, (int) $item->qty, 'cancellation_restore', [
-                                'reference_type' => 'order',
-                                'reference_id' => $locked->id,
-                                'size' => $item->size,
-                                'note' => 'Order cancelled',
-                                'admin_id' => session('admin_id'),
-                            ]);
+                        $variant = null;
+
+                        if ($product->has_variants) {
+                            $variant = $item->variant_id
+                                ? ProductVariant::with('color')->lockForUpdate()->find($item->variant_id)
+                                : ProductVariant::with('color')->where('product_id', $product->id)
+                                    ->where('size', $item->size)
+                                    ->whereNull('color_id')
+                                    ->lockForUpdate()
+                                    ->first();
+
+                            if (!$variant) {
+                                continue;
+                            }
+                        }
+
+                        $meta = [
+                            'reference_type' => 'order',
+                            'reference_id' => $locked->id,
+                            'size' => $variant?->size ?? $item->size,
+                            'note' => $now ? 'Order cancelled' : 'Cancelled order reopened',
+                            'admin_id' => session('admin_id'),
+                        ];
+
+                        if ($variant) {
+                            $this->stock->applyVariant($variant, $now ? (int) $item->qty : -(int) $item->qty, $now ? 'cancellation_restore' : 'reopen_deduction', $meta);
                         } else {
-                            $this->stock->apply($product, -(int) $item->qty, 'reopen_deduction', [
-                                'reference_type' => 'order',
-                                'reference_id' => $locked->id,
-                                'size' => $item->size,
-                                'note' => 'Cancelled order reopened',
-                                'admin_id' => session('admin_id'),
-                            ]);
+                            $this->stock->apply($product, $now ? (int) $item->qty : -(int) $item->qty, $now ? 'cancellation_restore' : 'reopen_deduction', $meta);
                         }
                     }
                 }

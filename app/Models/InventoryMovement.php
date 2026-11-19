@@ -10,11 +10,13 @@ class InventoryMovement extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'product_id', 'type', 'size', 'quantity_delta', 'size_stock_before', 'size_stock_after',
+        'product_id', 'variant_id', 'type', 'size', 'color', 'quantity_delta', 'size_stock_before', 'size_stock_after',
         'stock_before', 'stock_after', 'reference_type', 'reference_id', 'note', 'admin_id', 'created_at',
     ];
 
     protected $casts = [
+        'product_id' => 'integer',
+        'variant_id' => 'integer',
         'quantity_delta' => 'integer',
         'size_stock_before' => 'integer',
         'size_stock_after' => 'integer',
@@ -26,5 +28,10 @@ class InventoryMovement extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(ProductVariant::class, 'variant_id');
     }
 }

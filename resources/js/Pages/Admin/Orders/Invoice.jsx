@@ -67,7 +67,7 @@ function Invoice({ order, back_url, pdf_url }) {
                         <thead>
                             <tr className="text-left text-[10px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
                                 <th className="py-2 px-1">Item</th>
-                                <th className="py-2 px-1">Size</th>
+                                <th className="py-2 px-1">Color / Size</th>
                                 <th className="py-2 px-1">Qty</th>
                                 <th className="py-2 px-1 text-right">Price</th>
                                 <th className="py-2 px-1 text-right">Line total</th>
@@ -77,7 +77,9 @@ function Invoice({ order, back_url, pdf_url }) {
                             {order.items.map((item) => (
                                 <tr key={item.id} className="border-b border-gray-100">
                                     <td className="py-2 px-1">{item.name}</td>
-                                    <td className="py-2 px-1 text-gray-500">{item.size || '—'}</td>
+                                    <td className="py-2 px-1 text-gray-500">
+                                        {[item.color, item.size].filter(Boolean).join(' / ') || '—'}
+                                    </td>
                                     <td className="py-2 px-1">{item.qty}</td>
                                     <td className="py-2 px-1 text-right">BDT {Number(item.price).toLocaleString()}</td>
                                     <td className="py-2 px-1 text-right font-semibold">BDT {Number(item.line_total).toLocaleString()}</td>

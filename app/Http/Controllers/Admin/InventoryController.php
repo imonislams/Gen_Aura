@@ -16,7 +16,7 @@ class InventoryController extends Controller
     public function index(Request $r)
     {
         $threshold = (int) (Setting::all_()['low_stock_threshold'] ?? 5);
-        $q = Product::with('category');
+        $q = Product::with(['category', 'variants.color']);
 
         if ($r->filled('q')) {
             $q->where('name', 'like', '%' . $r->q . '%');
@@ -37,6 +37,16 @@ class InventoryController extends Controller
             'sizes' => $product->size_list,
             'size_stock' => $product->size_stock ?? [],
             'has_size_stock' => $product->hasSizeStock(),
+            'has_variants' => (bool) $product->has_variants,
+            'variants' => $product->variants->map(fn ($variant) => [
+                'id' => $variant->id,
+                'color' => $variant->color?->name,
+                'size' => $variant->size,
+                'stock' => (int) $variant->stock,
+                'status' => $variant->status,
+                'color_status' => $variant->color?->status ?? 'active',
+                'label' => $variant->label,
+            ])->values(),
             'status' => $product->status,
         ]);
 
@@ -68,6 +78,8 @@ class InventoryController extends Controller
             'id' => $movement->id,
             'product' => $movement->product?->name ?? 'Deleted product',
             'type' => $movement->type,
+            'variant_id' => $movement->variant_id,
+            'color' => $movement->color,
             'size' => $movement->size,
             'quantity_delta' => $movement->quantity_delta,
             'size_stock_before' => $movement->size_stock_before,
@@ -92,12 +104,25 @@ class InventoryController extends Controller
     {
         $d = $r->validate([
             'delta' => 'required|integer|not_in:0',
+            'variant_id' => 'nullable|integer',
             'size' => 'nullable|string|max:20',
             'note' => 'nullable|max:255',
         ]);
 
         try {
-            app(StockService::class)->adjust($product, (int) $d['delta'], $d['note'] ?? null, session('admin_id'), $d['size'] ?? null);
+            if ($product->has_variants) {
+                $variant = !empty($d['variant_id'])
+                    ? $product->variants()->find($d['variant_id'])
+                    : null;
+
+                if (!$variant) {
+                    return back()->withErrors('Choose a color and size variant.');
+                }
+
+                app(StockService::class)->adjustVariant($variant, (int) $d['delta'], $d['note'] ?? null, session('admin_id'));
+            } else {
+                app(StockService::class)->adjust($product, (int) $d['delta'], $d['note'] ?? null, session('admin_id'), $d['size'] ?? null);
+            }
         } catch (RuntimeException $e) {
             return back()->withErrors($e->getMessage());
         }

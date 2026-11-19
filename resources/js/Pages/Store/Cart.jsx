@@ -37,7 +37,7 @@ function Cart({ lines, subtotal, ship, total }) {
                             <img src={line.image_url} alt="" className="w-16 h-16 rounded-lg object-cover" />
                             <div className="flex-1 min-w-0">
                                 <Link href={line.url} className="block text-sm font-semibold truncate">
-                                    {line.name}{line.size ? ` (${line.size})` : ''}
+                                    {line.name}{line.color ? ` · ${line.color}` : ''}{line.size ? ` (${line.size})` : ''}
                                 </Link>
                                 <div className="text-sm">৳{Number(line.price).toLocaleString()}</div>
                                 {line.available !== undefined && line.available <= threshold && line.available > 0 && (

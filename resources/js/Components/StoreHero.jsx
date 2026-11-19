@@ -44,6 +44,7 @@ export default function StoreHero({ images = [], settings = {}, preview = false,
     const [hoverPaused, setHoverPaused] = useState(false);
     const [hidden, setHidden] = useState(false);
     const [reduced, setReduced] = useState(false);
+    const [inView, setInView] = useState(true);
     const rootRef = useRef(null);
     const startX = useRef(null);
     const swiped = useRef(false);
@@ -85,6 +86,50 @@ export default function StoreHero({ images = [], settings = {}, preview = false,
 
         return () => document.removeEventListener('visibilitychange', update);
     }, []);
+
+    useEffect(() => {
+        const root = rootRef.current;
+
+        if (!root || typeof IntersectionObserver === 'undefined') {
+            return undefined;
+        }
+
+        const observer = new IntersectionObserver(
+            ([entry]) => setInView(entry.isIntersecting),
+            { threshold: 0.3 }
+        );
+
+        observer.observe(root);
+
+        return () => observer.disconnect();
+    }, []);
+
+    useEffect(() => {
+        if (preview || count < 2 || !inView) {
+            return undefined;
+        }
+
+        const handler = (event) => {
+            const target = event.target;
+            const tag = target?.tagName?.toLowerCase();
+
+            if (target?.isContentEditable || ['input', 'textarea', 'select'].includes(tag)) {
+                return;
+            }
+
+            if (event.key === 'ArrowLeft') {
+                event.preventDefault();
+                go(safeIndex - 1);
+            } else if (event.key === 'ArrowRight') {
+                event.preventDefault();
+                go(safeIndex + 1);
+            }
+        };
+
+        window.addEventListener('keydown', handler);
+
+        return () => window.removeEventListener('keydown', handler);
+    }, [preview, count, inView, safeIndex]);
 
     useEffect(() => {
         if (preview || !settings.autoplay || count < 2 || paused) {
@@ -142,7 +187,7 @@ export default function StoreHero({ images = [], settings = {}, preview = false,
             ref={rootRef}
             className={`hg-hero${device === 'mobile' ? ' hg-hero--mobile' : ''}${preview ? ' hg-hero--preview' : ''}`}
             data-transition={transition}
-            style={{ '--hg-speed': `${speed}s` }}
+            style={{ '--hg-speed': `${speed}s`, touchAction: 'pan-y' }}
             aria-roledescription="carousel"
             aria-label="Featured collection"
             onMouseEnter={() => pauseOnHover && setHoverPaused(true)}
@@ -244,13 +289,10 @@ export default function StoreHero({ images = [], settings = {}, preview = false,
                     tabIndex={0}
                     aria-label="Product images. Use left and right arrow keys."
                     onKeyDown={(event) => {
-                        if (event.key === 'ArrowLeft') {
+                        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
                             event.preventDefault();
-                            go(safeIndex - 1);
-                        }
-                        if (event.key === 'ArrowRight') {
-                            event.preventDefault();
-                            go(safeIndex + 1);
+                            event.stopPropagation();
+                            go(safeIndex + (event.key === 'ArrowRight' ? 1 : -1));
                         }
                     }}
                 >

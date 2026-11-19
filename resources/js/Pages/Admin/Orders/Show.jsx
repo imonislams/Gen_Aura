@@ -70,7 +70,7 @@ function OrderShow({ order, statuses }) {
                                 <thead>
                                     <tr className="text-left text-xs uppercase tracking-wide text-gray-500">
                                         <th className="px-2 py-2">Product</th>
-                                        <th className="px-2 py-2">Size</th>
+                                        <th className="px-2 py-2">Color / Size</th>
                                         <th className="px-2 py-2">Qty</th>
                                         <th className="px-2 py-2">Price</th>
                                         <th className="px-2 py-2 text-right">Line total</th>
@@ -80,7 +80,9 @@ function OrderShow({ order, statuses }) {
                                     {order.items.map((item) => (
                                         <tr key={item.id} className="border-t border-gray-100">
                                             <td className="px-2 py-2">{item.name}</td>
-                                            <td className="px-2 py-2 text-gray-500">{item.size || '—'}</td>
+                                            <td className="px-2 py-2 text-gray-500">
+                                                {[item.color, item.size].filter(Boolean).join(' / ') || '—'}
+                                            </td>
                                             <td className="px-2 py-2">{item.qty}</td>
                                             <td className="px-2 py-2">৳{Number(item.price).toLocaleString()}</td>
                                             <td className="px-2 py-2 text-right font-semibold">

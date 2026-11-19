@@ -5,6 +5,7 @@ namespace App\Services\Checkout;
 use App\Models\DeliveryZone;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Services\Inventory\StockService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -15,18 +16,26 @@ class CheckoutService
     public function __construct(private StockService $stock)
     {
     }
+
     public function lines(): array
     {
         $cart = session('cart', []);
-        $products = Product::active()->whereIn('id', collect($cart)->pluck('id'))->get()->keyBy('id');
+        $products = Product::active()->with(['variants.color'])
+            ->whereIn('id', collect($cart)->pluck('id'))
+            ->get()
+            ->keyBy('id');
 
         $lines = [];
         foreach ($cart as $key => $item) {
             if ($product = $products->get($item['id'])) {
+                $variant = $product->has_variants ? $this->resolveVariant($product, $item) : null;
+
                 $lines[] = [
                     'key' => $key,
                     'p' => $product,
-                    'size' => $item['size'],
+                    'variant' => $variant,
+                    'size' => $variant?->size ?? (string) ($item['size'] ?? ''),
+                    'color' => $variant?->color?->name,
                     'qty' => (int) $item['qty'],
                 ];
             }
@@ -75,39 +84,57 @@ class CheckoutService
 
                 foreach ($lines as $line) {
                     $product = Product::lockForUpdate()->find($line['p']->id);
+                    $variant = null;
                     $size = (string) ($line['size'] ?? '');
 
                     if (!$product || $product->status !== 'active') {
                         throw new RuntimeException(($product->name ?? 'Product') . ': Out of stock');
                     }
 
-                    if (!empty($product->size_list) && $size === '') {
-                        throw new RuntimeException($product->name . ': choose a size.');
-                    }
+                    if ($product->has_variants) {
+                        $variant = $this->lockVariant($product, $line);
 
-                    if (!empty($product->size_list) && !in_array($size, $product->size_list, true)) {
-                        throw new RuntimeException($product->name . ': invalid size.');
-                    }
-
-                    if ($product->hasSizeStock()) {
-                        $available = (int) ($product->size_stock[$size] ?? 0);
-
-                        if ($available < $line['qty']) {
-                            throw new RuntimeException($product->name . ' (' . $size . '): only ' . $available . ' left.');
+                        if (!$variant || !$variant->isAvailable()) {
+                            throw new RuntimeException($product->name . ($size !== '' ? ' (' . $size . ')' : '') . ': no longer available.');
                         }
-                    } elseif ($product->stock < $line['qty']) {
-                        throw new RuntimeException($product->name . ': Out of stock');
+
+                        $size = (string) ($variant->size ?? '');
+
+                        if ((int) $variant->stock < $line['qty']) {
+                            throw new RuntimeException($product->name . ' (' . $variant->label . '): only ' . (int) $variant->stock . ' left.');
+                        }
+                    } else {
+                        if (!empty($product->size_list) && $size === '') {
+                            throw new RuntimeException($product->name . ': choose a size.');
+                        }
+
+                        if (!empty($product->size_list) && !in_array($size, $product->size_list, true)) {
+                            throw new RuntimeException($product->name . ': invalid size.');
+                        }
+
+                        if ($product->hasSizeStock()) {
+                            $available = (int) ($product->size_stock[$size] ?? 0);
+
+                            if ($available < $line['qty']) {
+                                throw new RuntimeException($product->name . ' (' . $size . '): only ' . $available . ' left.');
+                            }
+                        } elseif ($product->stock < $line['qty']) {
+                            throw new RuntimeException($product->name . ': Out of stock');
+                        }
                     }
 
                     $items[] = [
                         'product_id' => $product->id,
+                        'variant_id' => $variant?->id,
                         'name' => $product->name,
-                        'size' => $line['size'],
+                        'size' => $variant?->size ?? $line['size'],
+                        'color' => $variant?->color?->name,
+                        'sku' => $variant?->sku,
                         'qty' => $line['qty'],
                         'price' => $product->price,
                     ];
 
-                    $stockLines[] = ['product' => $product, 'qty' => $line['qty'], 'size' => $size];
+                    $stockLines[] = ['product' => $product, 'variant' => $variant, 'qty' => $line['qty'], 'size' => $size];
                     $subtotal += $product->price * $line['qty'];
                 }
 
@@ -123,12 +150,18 @@ class CheckoutService
                 $order->items()->createMany($items);
 
                 foreach ($stockLines as $entry) {
-                    $this->stock->apply($entry['product'], -$entry['qty'], 'order_sale', [
+                    $meta = [
                         'reference_type' => 'order',
                         'reference_id' => $order->id,
                         'size' => $entry['size'],
                         'note' => 'Order sale',
-                    ]);
+                    ];
+
+                    if ($entry['variant']) {
+                        $this->stock->applyVariant($entry['variant'], -$entry['qty'], 'order_sale', $meta);
+                    } else {
+                        $this->stock->apply($entry['product'], -$entry['qty'], 'order_sale', $meta);
+                    }
                 }
 
                 return $order->load('items');
@@ -157,7 +190,8 @@ class CheckoutService
         try {
             $rows = '';
             foreach ($order->items as $item) {
-                $rows .= '<tr><td>' . e($item->name) . ($item->size ? ' (' . e($item->size) . ')' : '') . '</td><td>x' . $item->qty . '</td><td>৳' . ($item->price * $item->qty) . '</td></tr>';
+                $variant = trim(($item->color ? $item->color . ' / ' : '') . ($item->size ?? ''), ' /');
+                $rows .= '<tr><td>' . e($item->name) . ($variant !== '' ? ' (' . e($variant) . ')' : '') . '</td><td>x' . $item->qty . '</td><td>৳' . ($item->price * $item->qty) . '</td></tr>';
             }
 
             $html = '<h2>New order #' . $order->order_number . '</h2>'
@@ -169,5 +203,34 @@ class CheckoutService
         } catch (\Throwable $e) {
             report($e);
         }
+    }
+
+    private function resolveVariant(Product $product, array $item): ?ProductVariant
+    {
+        $variants = $product->relationLoaded('variants') ? $product->variants : $product->variants()->with('color')->get();
+
+        if (!empty($item['variant_id'])) {
+            return $variants->firstWhere('id', (int) $item['variant_id']);
+        }
+
+        $size = (string) ($item['size'] ?? '');
+        $matches = $variants->filter(fn (ProductVariant $variant) => (string) $variant->size === $size);
+
+        if ($matches->count() === 1) {
+            return $matches->first();
+        }
+
+        return $matches->firstWhere('color_id', null);
+    }
+
+    private function lockVariant(Product $product, array $line): ?ProductVariant
+    {
+        $query = ProductVariant::with('color')->where('product_id', $product->id)->lockForUpdate();
+
+        if ($line['variant'] ?? null) {
+            return (clone $query)->find($line['variant']->id);
+        }
+
+        return $query->where('size', (string) ($line['size'] ?? ''))->whereNull('color_id')->first();
     }
 }

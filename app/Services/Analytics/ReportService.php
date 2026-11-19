@@ -247,6 +247,7 @@ class ReportService
             ->map(fn ($movement) => [
                 $movement->created_at?->copy()->setTimezone($this->tz())->format('d M Y, h:i A'),
                 $movement->product?->name ?? 'Deleted product',
+                trim(($movement->color ? $movement->color . ' / ' : '') . ($movement->size ?? ''), ' /') ?: '—',
                 $movement->type,
                 (int) $movement->quantity_delta,
                 (int) $movement->stock_before,
@@ -254,7 +255,7 @@ class ReportService
                 $movement->note,
             ])->all();
 
-        return ['title' => 'Stock movement report', 'headings' => ['Date', 'Product', 'Type', 'Change', 'Before', 'After', 'Note'], 'rows' => $rows];
+        return ['title' => 'Stock movement report', 'headings' => ['Date', 'Product', 'Variant', 'Type', 'Change', 'Before', 'After', 'Note'], 'rows' => $rows];
     }
 
     private function customerReport(DateRange $range, bool $withAverage): array

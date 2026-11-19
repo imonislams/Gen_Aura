@@ -158,6 +158,7 @@ function Checkout({ lines, subtotal, ship, total, zones, checkoutToken }) {
                             <div key={line.key} className="flex justify-between gap-3 py-1.5 text-sm">
                                 <span>
                                     {line.name}
+                                    {line.color ? ` · ${line.color}` : ''}
                                     {line.size ? ` (${line.size})` : ''} × {line.qty}
                                     {line.available !== undefined && line.available <= threshold && line.available > 0 && (
                                         <span className="block text-[10px] text-mag font-semibold">Only {line.available} left</span>
